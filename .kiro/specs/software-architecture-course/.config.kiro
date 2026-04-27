@@ -1,0 +1,14 @@
+{
+  "specType": "feature",
+  "workflowType": "design-first",
+  "featureName": "software-architecture-course",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "updatedAt": "2024-01-15T11:45:00Z",
+  "status": "design-complete",
+  "languages": ["java", "dotnet", "nodejs", "python"],
+  "phases": {
+    "design": "completed",
+    "requirements": "completed",
+    "tasks": "completed"
+  }
+}
