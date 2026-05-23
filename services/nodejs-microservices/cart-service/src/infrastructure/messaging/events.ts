@@ -1,0 +1,8 @@
+export const CART_EVENTS_TOPIC = 'cart-events';
+
+export enum CartEventType {
+  ITEM_ADDED = 'ITEM_ADDED',
+  ITEM_REMOVED = 'ITEM_REMOVED',
+  CART_CHECKED_OUT = 'CART_CHECKED_OUT',
+  COUPON_APPLIED = 'COUPON_APPLIED',
+}

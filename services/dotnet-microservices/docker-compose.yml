@@ -1,0 +1,190 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: dotnet-ms-zookeeper
+    ports:
+      - "2187:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - dotnet-ms-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: dotnet-ms-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9098:9098"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29098,PLAINTEXT_HOST://localhost:9098
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - dotnet-ms-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dotnet-ms-postgres
+    ports:
+      - "5442:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_MULTIPLE_DATABASES: user_db,product_db,cart_db,order_db,payment_db,inventory_db,analytics_db
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dotnet-ms-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: dotnet-ms-redis
+    ports:
+      - "6382:6379"
+    networks:
+      - dotnet-ms-network
+
+  user-service:
+    build:
+      context: ./UserService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-user-service
+    ports:
+      - "6082:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - dotnet-ms-network
+
+  product-service:
+    build:
+      context: ./ProductService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-product-service
+    ports:
+      - "6083:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - dotnet-ms-network
+
+  cart-service:
+    build:
+      context: ./CartService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-cart-service
+    ports:
+      - "6084:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - dotnet-ms-network
+
+  order-service:
+    build:
+      context: ./OrderService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-order-service
+    ports:
+      - "6085:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - dotnet-ms-network
+
+  payment-service:
+    build:
+      context: ./PaymentService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-payment-service
+    ports:
+      - "6086:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - dotnet-ms-network
+
+  inventory-service:
+    build:
+      context: ./InventoryService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-inventory-service
+    ports:
+      - "6087:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - dotnet-ms-network
+
+  notification-service:
+    build:
+      context: ./NotificationService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-notification-service
+    ports:
+      - "6088:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - kafka
+    networks:
+      - dotnet-ms-network
+
+  analytics-service:
+    build:
+      context: ./AnalyticsService
+      dockerfile: Dockerfile
+    container_name: dotnet-ms-analytics-service
+    ports:
+      - "6089:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - dotnet-ms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  dotnet-ms-network:
+    driver: bridge

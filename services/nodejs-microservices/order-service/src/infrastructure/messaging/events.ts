@@ -1,0 +1,8 @@
+export const ORDER_EVENTS_TOPIC = 'order-events';
+
+export enum OrderEventType {
+  ORDER_CREATED = 'ORDER_CREATED',
+  ORDER_CONFIRMED = 'ORDER_CONFIRMED',
+  ORDER_CANCELLED = 'ORDER_CANCELLED',
+  ORDER_FAILED = 'ORDER_FAILED',
+}

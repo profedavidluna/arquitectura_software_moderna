@@ -1,0 +1,131 @@
+{
+  "realm": "ecommerce",
+  "enabled": true,
+  "accessTokenLifespan": 900,
+  "refreshTokenLifespan": 604800,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrator role with full access"
+      },
+      {
+        "name": "USER",
+        "description": "Regular user role"
+      },
+      {
+        "name": "CUSTOMER",
+        "description": "Customer role for shopping"
+      },
+      {
+        "name": "SUPPORT",
+        "description": "Support agent role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "web-client",
+      "name": "Web Client",
+      "enabled": true,
+      "type": "public",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8080"
+      ],
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "mobile-client",
+      "name": "Mobile Client",
+      "enabled": true,
+      "type": "public",
+      "redirectUris": [
+        "http://localhost:8100/*",
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8100",
+        "http://localhost:4200"
+      ],
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "service-account",
+      "name": "Service Account",
+      "enabled": true,
+      "type": "confidential",
+      "secret": "service-account-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@ecommerce.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "USER", "CUSTOMER"]
+    },
+    {
+      "username": "user",
+      "enabled": true,
+      "email": "user@ecommerce.local",
+      "firstName": "Regular",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER", "CUSTOMER"]
+    },
+    {
+      "username": "customer",
+      "enabled": true,
+      "email": "customer@ecommerce.local",
+      "firstName": "Customer",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "customer",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["CUSTOMER"]
+    },
+    {
+      "username": "support",
+      "enabled": true,
+      "email": "support@ecommerce.local",
+      "firstName": "Support",
+      "lastName": "Agent",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "support",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SUPPORT", "USER"]
+    }
+  ]
+}

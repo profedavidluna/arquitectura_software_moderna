@@ -1,0 +1,7 @@
+export const PAYMENT_EVENTS_TOPIC = 'payment-events';
+
+export enum PaymentEventType {
+  PAYMENT_COMPLETED = 'PAYMENT_COMPLETED',
+  PAYMENT_FAILED = 'PAYMENT_FAILED',
+  PAYMENT_REFUNDED = 'PAYMENT_REFUNDED',
+}

@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: java-mvc-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: java_hexagonal_db,java_layered_db,java_clean_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - java-mvc-network
+
+  hexagonal-app:
+    build:
+      context: ./hexagonal-architecture
+      dockerfile: Dockerfile
+    container_name: java-hexagonal-app
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=java_hexagonal_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - java-mvc-network
+
+  layered-app:
+    build:
+      context: ./layered-architecture
+      dockerfile: Dockerfile
+    container_name: java-layered-app
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=java_layered_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - java-mvc-network
+
+  clean-app:
+    build:
+      context: ./clean-architecture
+      dockerfile: Dockerfile
+    container_name: java-clean-app
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=java_clean_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - java-mvc-network
+
+volumes:
+  postgres_data:
+
+networks:
+  java-mvc-network:
+    driver: bridge

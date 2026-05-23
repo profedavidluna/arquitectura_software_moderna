@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    image: kong:latest
+    container_name: api-gateway
+    ports:
+      - "8080:8000"
+      - "8443:8443"
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+    volumes:
+      - ./api-gateway/kong.yml:/kong/declarative/kong.yml
+    networks:
+      - ecommerce-network
+    depends_on:
+      - keycloak
+
+networks:
+  ecommerce-network:
+    external: true

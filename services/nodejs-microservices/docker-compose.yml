@@ -1,0 +1,227 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: nodejs-ms-zookeeper
+    ports:
+      - "2185:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - nodejs-ms-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: nodejs-ms-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9096:9096"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29096,PLAINTEXT_HOST://localhost:9096
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - nodejs-ms-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: nodejs-ms-postgres
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: postgres
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - nodejs-ms-pgdata:/var/lib/postgresql/data
+    networks:
+      - nodejs-ms-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: nodejs-ms-redis
+    ports:
+      - "6380:6379"
+    networks:
+      - nodejs-ms-network
+
+  # ============================================================
+  # APPLICATION SERVICES
+  # ============================================================
+
+  user-service:
+    build: ./user-service
+    container_name: nodejs-ms-user-service
+    ports:
+      - "3082:3082"
+    environment:
+      PORT: 3082
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: user_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - nodejs-ms-network
+
+  product-service:
+    build: ./product-service
+    container_name: nodejs-ms-product-service
+    ports:
+      - "3083:3083"
+    environment:
+      PORT: 3083
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: product_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - nodejs-ms-network
+
+  cart-service:
+    build: ./cart-service
+    container_name: nodejs-ms-cart-service
+    ports:
+      - "3084:3084"
+    environment:
+      PORT: 3084
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cart_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PRODUCT_SERVICE_URL: http://product-service:3083
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - nodejs-ms-network
+
+  order-service:
+    build: ./order-service
+    container_name: nodejs-ms-order-service
+    ports:
+      - "3085:3085"
+    environment:
+      PORT: 3085
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: order_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+      CART_SERVICE_URL: http://cart-service:3084
+      INVENTORY_SERVICE_URL: http://inventory-service:3087
+      PAYMENT_SERVICE_URL: http://payment-service:3086
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - nodejs-ms-network
+
+  payment-service:
+    build: ./payment-service
+    container_name: nodejs-ms-payment-service
+    ports:
+      - "3086:3086"
+    environment:
+      PORT: 3086
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: payment_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - nodejs-ms-network
+
+  inventory-service:
+    build: ./inventory-service
+    container_name: nodejs-ms-inventory-service
+    ports:
+      - "3087:3087"
+    environment:
+      PORT: 3087
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: inventory_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - nodejs-ms-network
+
+  notification-service:
+    build: ./notification-service
+    container_name: nodejs-ms-notification-service
+    ports:
+      - "3088:3088"
+    environment:
+      PORT: 3088
+      KAFKA_BROKERS: kafka:29096
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+    depends_on:
+      - kafka
+    networks:
+      - nodejs-ms-network
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: nodejs-ms-analytics-service
+    ports:
+      - "3089:3089"
+    environment:
+      PORT: 3089
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: analytics_db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      KAFKA_BROKERS: kafka:29096
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - nodejs-ms-network
+
+volumes:
+  nodejs-ms-pgdata:
+
+networks:
+  nodejs-ms-network:
+    driver: bridge

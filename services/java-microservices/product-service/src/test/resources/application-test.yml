@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: never
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+    admin:
+      auto-create: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/ecommerce
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+logging:
+  level:
+    com.ecommerce.productservice: DEBUG
+    org.hibernate.SQL: DEBUG

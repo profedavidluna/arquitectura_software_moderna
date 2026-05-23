@@ -1,0 +1,239 @@
+{
+  "topics": [
+    {
+      "name": "order.created",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when a new order is created",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "orderId": {"type": "string", "format": "uuid"},
+          "userId": {"type": "string", "format": "uuid"},
+          "cartId": {"type": "string", "format": "uuid"},
+          "status": {"type": "string", "enum": ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"]},
+          "totalAmount": {"type": "number", "format": "decimal"},
+          "items": {"type": "array", "items": {"$ref": "#/definitions/OrderItem"}},
+          "createdAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "order.confirmed",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when an order is confirmed",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "orderId": {"type": "string", "format": "uuid"},
+          "userId": {"type": "string", "format": "uuid"},
+          "status": {"type": "string", "enum": ["CONFIRMED"]},
+          "confirmedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "order.shipped",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when an order is shipped",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "orderId": {"type": "string", "format": "uuid"},
+          "userId": {"type": "string", "format": "uuid"},
+          "trackingNumber": {"type": "string"},
+          "carrier": {"type": "string"},
+          "shippedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "order.cancelled",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when an order is cancelled",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "orderId": {"type": "string", "format": "uuid"},
+          "userId": {"type": "string", "format": "uuid"},
+          "cancelledAt": {"type": "string", "format": "date-time"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "payment.processed",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when a payment is processed",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "paymentId": {"type": "string", "format": "uuid"},
+          "orderId": {"type": "string", "format": "uuid"},
+          "userId": {"type": "string", "format": "uuid"},
+          "amount": {"type": "number", "format": "decimal"},
+          "status": {"type": "string", "enum": ["SUCCESS", "FAILED", "PENDING"]},
+          "paymentMethod": {"type": "string"},
+          "processedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "payment.failed",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when a payment fails",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "paymentId": {"type": "string", "format": "uuid"},
+          "orderId": {"type": "string", "format": "uuid"},
+          "userId": {"type": "string", "format": "uuid"},
+          "amount": {"type": "number", "format": "decimal"},
+          "error": {"type": "string"},
+          "failedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "inventory.reserved",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when inventory is reserved",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "reservationId": {"type": "string", "format": "uuid"},
+          "orderId": {"type": "string", "format": "uuid"},
+          "productId": {"type": "string", "format": "uuid"},
+          "quantity": {"type": "integer"},
+          "reservedAt": {"type": "string", "format": "date-time"},
+          "expiresAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "inventory.depleted",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when inventory is depleted",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "productId": {"type": "string", "format": "uuid"},
+          "quantityDepleted": {"type": "integer"},
+          "orderId": {"type": "string", "format": "uuid"},
+          "depletedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "user.registered",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when a new user is registered",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {"type": "string", "format": "uuid"},
+          "email": {"type": "string", "format": "email"},
+          "username": {"type": "string"},
+          "registeredAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    {
+      "name": "user.updated",
+      "partitions": 3,
+      "replicationFactor": 2,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Published when a user profile is updated",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": {"type": "string", "format": "uuid"},
+          "email": {"type": "string", "format": "email"},
+          "username": {"type": "string"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  ],
+  "consumerGroups": [
+    {
+      "name": "user-service-group",
+      "topics": ["user.registered", "user.updated"]
+    },
+    {
+      "name": "product-service-group",
+      "topics": []
+    },
+    {
+      "name": "cart-service-group",
+      "topics": []
+    },
+    {
+      "name": "order-service-group",
+      "topics": ["order.created", "order.confirmed", "order.shipped", "order.cancelled", "payment.processed", "payment.failed", "inventory.reserved", "inventory.depleted"]
+    },
+    {
+      "name": "payment-service-group",
+      "topics": ["order.created"]
+    },
+    {
+      "name": "inventory-service-group",
+      "topics": ["order.created", "order.cancelled"]
+    },
+    {
+      "name": "notification-service-group",
+      "topics": ["order.created", "order.confirmed", "order.shipped", "order.cancelled", "payment.processed", "payment.failed", "user.registered"]
+    },
+    {
+      "name": "analytics-service-group",
+      "topics": ["order.created", "order.confirmed", "order.shipped", "order.cancelled", "payment.processed", "payment.failed", "inventory.reserved", "inventory.depleted", "user.registered", "user.updated"]
+    }
+  ]
+}

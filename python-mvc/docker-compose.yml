@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # Shared PostgreSQL Database (port 5433 to avoid conflicts with Node.js version)
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: python-product-catalog-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata_python:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # Hexagonal Architecture - Python/FastAPI (Port 8081)
+  # ============================================================
+  hexagonal:
+    build:
+      context: ./hexagonal-architecture
+      dockerfile: Dockerfile
+    container_name: python-product-catalog-hexagonal
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=hexagonal_db
+      - USE_POSTGRES=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================================
+  # Layered Architecture - Python/FastAPI (Port 8082)
+  # ============================================================
+  layered:
+    build:
+      context: ./layered-architecture
+      dockerfile: Dockerfile
+    container_name: python-product-catalog-layered
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=layered_db
+      - USE_POSTGRES=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================================
+  # Clean Architecture - Python/FastAPI (Port 8083)
+  # ============================================================
+  clean:
+    build:
+      context: ./clean-architecture
+      dockerfile: Dockerfile
+    container_name: python-product-catalog-clean
+    ports:
+      - "8083:8083"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=clean_db
+      - USE_POSTGRES=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata_python:

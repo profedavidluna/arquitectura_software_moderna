@@ -1,0 +1,85 @@
+# Jaeger Sampling Strategies Configuration
+# This file defines sampling strategies for distributed tracing
+
+{
+  "service_strategies": [
+    {
+      "service": "user-service",
+      "type": "probabilistic",
+      "param": 0.1,
+      "operation_strategies": [
+        {
+          "operation": "GET /users",
+          "type": "probabilistic",
+          "param": 0.05
+        },
+        {
+          "operation": "POST /users",
+          "type": "probabilistic",
+          "param": 0.2
+        }
+      ]
+    },
+    {
+      "service": "product-service",
+      "type": "probabilistic",
+      "param": 0.1,
+      "operation_strategies": [
+        {
+          "operation": "GET /products",
+          "type": "probabilistic",
+          "param": 0.05
+        },
+        {
+          "operation": "POST /products",
+          "type": "probabilistic",
+          "param": 0.2
+        }
+      ]
+    },
+    {
+      "service": "cart-service",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "order-service",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "payment-service",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "inventory-service",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "notification-service",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "analytics-service",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "api-gateway",
+      "type": "probabilistic",
+      "param": 0.1
+    },
+    {
+      "service": "default",
+      "type": "probabilistic",
+      "param": 0.1
+    }
+  ],
+  "default_strategy": {
+    "type": "probabilistic",
+    "param": 0.1
+  }
+}

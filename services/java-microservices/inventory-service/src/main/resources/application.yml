@@ -1,0 +1,169 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: inventory-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5435/inventory_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+    open-in-view: false
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: inventory-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.ecommerce.*"
+
+  # Security - OAuth2 Resource Server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/ecommerce/protocol/openid-connect/certs}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 0.1
+
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Logging
+logging:
+  level:
+    com.ecommerce.inventoryservice: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  datasource:
+    url: jdbc:postgresql://localhost:5435/inventory_db
+
+logging:
+  level:
+    com.ecommerce.inventoryservice: DEBUG
+    org.hibernate.SQL: DEBUG
+
+---
+# Test Profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/ecommerce
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+logging:
+  level:
+    com.ecommerce.inventoryservice: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+management:
+  tracing:
+    sampling:
+      probability: 0.05
+
+logging:
+  level:
+    com.ecommerce.inventoryservice: WARN
+    org.springframework.web: WARN

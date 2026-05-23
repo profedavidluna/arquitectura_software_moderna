@@ -1,0 +1,201 @@
+version: '3.8'
+
+services:
+  # ==================== Infrastructure ====================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: python-ms-zookeeper
+    ports:
+      - "2186:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - python-ms-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: python-ms-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9097:9097"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29097,PLAINTEXT_HOST://localhost:9097
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - python-ms-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: python-ms-postgres
+    ports:
+      - "5441:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: user_db,product_db,cart_db,order_db,payment_db,inventory_db,analytics_db
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - python-ms-pgdata:/var/lib/postgresql/data
+    networks:
+      - python-ms-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: python-ms-redis
+    ports:
+      - "6381:6379"
+    networks:
+      - python-ms-network
+
+  # ==================== Microservices ====================
+  user-service:
+    build: ./user-service
+    container_name: python-ms-user
+    ports:
+      - "7082:7082"
+    environment:
+      - APP_PORT=7082
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/user_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  product-service:
+    build: ./product-service
+    container_name: python-ms-product
+    ports:
+      - "7083:7083"
+    environment:
+      - APP_PORT=7083
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/product_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  cart-service:
+    build: ./cart-service
+    container_name: python-ms-cart
+    ports:
+      - "7084:7084"
+    environment:
+      - APP_PORT=7084
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/cart_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+      - PRODUCT_SERVICE_URL=http://product-service:7083
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  order-service:
+    build: ./order-service
+    container_name: python-ms-order
+    ports:
+      - "7085:7085"
+    environment:
+      - APP_PORT=7085
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/order_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+      - CART_SERVICE_URL=http://cart-service:7084
+      - INVENTORY_SERVICE_URL=http://inventory-service:7087
+      - PAYMENT_SERVICE_URL=http://payment-service:7086
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  payment-service:
+    build: ./payment-service
+    container_name: python-ms-payment
+    ports:
+      - "7086:7086"
+    environment:
+      - APP_PORT=7086
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/payment_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  inventory-service:
+    build: ./inventory-service
+    container_name: python-ms-inventory
+    ports:
+      - "7087:7087"
+    environment:
+      - APP_PORT=7087
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/inventory_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  notification-service:
+    build: ./notification-service
+    container_name: python-ms-notification
+    ports:
+      - "7088:7088"
+    environment:
+      - APP_PORT=7088
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+  analytics-service:
+    build: ./analytics-service
+    container_name: python-ms-analytics
+    ports:
+      - "7089:7089"
+    environment:
+      - APP_PORT=7089
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/analytics_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29097
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - python-ms-network
+
+volumes:
+  python-ms-pgdata:
+
+networks:
+  python-ms-network:
+    driver: bridge

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Shipping Notification</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 30px; }
+        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #FF9800; }
+        .header h1 { color: #FF9800; margin: 0; }
+        .content { padding: 20px 0; }
+        .shipping-details { background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .tracking { font-size: 18px; color: #FF9800; font-weight: bold; letter-spacing: 1px; }
+        .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Your Order Has Shipped!</h1>
+    </div>
+    <div class="content">
+        <p>Great news! Your order is on its way.</p>
+
+        <div class="shipping-details">
+            <p><strong>Order ID:</strong> <span th:text="${orderId}">ORD-001</span></p>
+            <p><strong>Carrier:</strong> <span th:text="${carrier}">FedEx</span></p>
+            <p><strong>Tracking Number:</strong> <span class="tracking" th:text="${trackingNumber}">1234567890</span></p>
+            <p><strong>Shipped At:</strong> <span th:text="${shippedAt}">2024-01-01</span></p>
+        </div>
+
+        <p>You can track your package using the tracking number above on your carrier's website.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 E-Commerce Platform. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

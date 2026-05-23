@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Order Confirmation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 30px; }
+        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #4CAF50; }
+        .header h1 { color: #4CAF50; margin: 0; }
+        .content { padding: 20px 0; }
+        .order-details { background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #4CAF50; color: white; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Order Confirmed!</h1>
+    </div>
+    <div class="content">
+        <p>Thank you for your order. We've received your order and it's being processed.</p>
+
+        <div class="order-details">
+            <p><strong>Order ID:</strong> <span th:text="${orderId}">ORD-001</span></p>
+            <p><strong>Total Amount:</strong> $<span th:text="${#numbers.formatDecimal(totalAmount, 1, 2)}">0.00</span></p>
+            <p><strong>Order Date:</strong> <span th:text="${createdAt}">2024-01-01</span></p>
+        </div>
+
+        <div th:if="${items != null and !items.isEmpty()}">
+            <h3>Order Items:</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.productName}">Product Name</td>
+                    <td th:text="${item.quantity}">1</td>
+                    <td>$<span th:text="${#numbers.formatDecimal(item.price, 1, 2)}">0.00</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>We'll send you another email when your order ships.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 E-Commerce Platform. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

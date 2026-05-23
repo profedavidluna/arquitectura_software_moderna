@@ -1,0 +1,9 @@
+from enum import Enum
+
+
+class InventoryEvent(str, Enum):
+    STOCK_ADDED = "STOCK_ADDED"
+    STOCK_RESERVED = "STOCK_RESERVED"
+    STOCK_RELEASED = "STOCK_RELEASED"
+    STOCK_CONFIRMED = "STOCK_CONFIRMED"
+    LOW_STOCK_ALERT = "LOW_STOCK_ALERT"

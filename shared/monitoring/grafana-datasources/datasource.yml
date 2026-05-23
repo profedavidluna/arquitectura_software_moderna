@@ -1,0 +1,40 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: "POST"
+    secureJsonData:
+      httpHeaderValue1: "Bearer ${GRAFANA_PROMETHEUS_TOKEN}"
+
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    editable: true
+    jsonData:
+      timeField: "@timestamp"
+      interval: "Daily"
+      logMessageField: "message"
+      logLevelField: "level"
+      esVersion: "8.0.0"
+      maxConcurrentShardRequests: 5
+      logQueryIdField: "traceId"
+      traceQueryIdField: "traceId"
+      spanIdField: "spanId"
+      traceIdField: "traceId"
+
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    jsonData:
+      traceIdField: "traceId"
+      spanIdField: "spanId"

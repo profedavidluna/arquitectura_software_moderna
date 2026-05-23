@@ -1,0 +1,177 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: notification-service
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.ecommerce.*"
+
+  # Mail Configuration
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  # Thymeleaf Configuration
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: true
+
+  # Security - OAuth2 Resource Server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/ecommerce/protocol/openid-connect/certs}
+
+# Notification Configuration
+notification:
+  email:
+    from: ${NOTIFICATION_FROM_EMAIL:noreply@ecommerce.com}
+    from-name: ${NOTIFICATION_FROM_NAME:E-Commerce Platform}
+  retry:
+    max-attempts: 3
+    initial-backoff-ms: 1000
+    backoff-multiplier: 2.0
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 0.1
+
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Logging
+logging:
+  level:
+    com.ecommerce.notificationservice: INFO
+    org.springframework.web: INFO
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  mail:
+    host: localhost
+    port: 1025
+
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    com.ecommerce.notificationservice: DEBUG
+    org.springframework.kafka: DEBUG
+
+---
+# Test Profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  mail:
+    host: localhost
+    port: 1025
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/ecommerce
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    com.ecommerce.notificationservice: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  thymeleaf:
+    cache: true
+
+management:
+  tracing:
+    sampling:
+      probability: 0.05
+
+logging:
+  level:
+    com.ecommerce.notificationservice: WARN
+    org.springframework.web: WARN

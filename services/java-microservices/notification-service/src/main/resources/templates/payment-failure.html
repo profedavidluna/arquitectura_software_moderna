@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Payment Failed</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 30px; }
+        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #f44336; }
+        .header h1 { color: #f44336; margin: 0; }
+        .content { padding: 20px 0; }
+        .error-details { background: #fff3f3; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #f44336; }
+        .action-box { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { text-align: center; padding-top: 20px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Payment Failed</h1>
+    </div>
+    <div class="content">
+        <p>Unfortunately, we were unable to process your payment.</p>
+
+        <div class="error-details">
+            <p><strong>Order ID:</strong> <span th:text="${orderId}">ORD-001</span></p>
+            <p><strong>Amount:</strong> $<span th:text="${#numbers.formatDecimal(amount, 1, 2)}">0.00</span></p>
+            <p><strong>Error:</strong> <span th:text="${error != null ? error : 'Payment could not be processed'}">Unknown error</span></p>
+            <p><strong>Date:</strong> <span th:text="${failedAt}">2024-01-01</span></p>
+        </div>
+
+        <div class="action-box">
+            <h3>What you can do:</h3>
+            <ul>
+                <li>Check that your payment details are correct</li>
+                <li>Ensure sufficient funds are available</li>
+                <li>Try a different payment method</li>
+                <li>Contact your bank if the issue persists</li>
+            </ul>
+        </div>
+
+        <p>Your order is still pending. Please try again or contact our support team for assistance.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 E-Commerce Platform. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

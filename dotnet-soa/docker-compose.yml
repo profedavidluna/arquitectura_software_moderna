@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # =====================================================
+  # Infrastructure Services
+  # =====================================================
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: soa-zookeeper
+    ports:
+      - "2184:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - soa-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: soa-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9095:9095"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29095,PLAINTEXT_HOST://localhost:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - soa-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29095"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: soa-postgres
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: dotnet_product_db,dotnet_order_db,dotnet_inventory_db
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - soa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =====================================================
+  # Application Services
+  # =====================================================
+
+  product-service:
+    build:
+      context: ./ProductService
+      dockerfile: Dockerfile
+    container_name: soa-product-service
+    ports:
+      - "6091:6091"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:6091
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dotnet_product_db;Username=postgres;Password=postgres
+      - Kafka__BootstrapServers=kafka:29095
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - soa-network
+    restart: on-failure
+
+  order-service:
+    build:
+      context: ./OrderService
+      dockerfile: Dockerfile
+    container_name: soa-order-service
+    ports:
+      - "6092:6092"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:6092
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dotnet_order_db;Username=postgres;Password=postgres
+      - Kafka__BootstrapServers=kafka:29095
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - soa-network
+    restart: on-failure
+
+  inventory-service:
+    build:
+      context: ./InventoryService
+      dockerfile: Dockerfile
+    container_name: soa-inventory-service
+    ports:
+      - "6093:6093"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:6093
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dotnet_inventory_db;Username=postgres;Password=postgres
+      - Kafka__BootstrapServers=kafka:29095
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - soa-network
+    restart: on-failure
+
+volumes:
+  postgres_data:
+
+networks:
+  soa-network:
+    driver: bridge

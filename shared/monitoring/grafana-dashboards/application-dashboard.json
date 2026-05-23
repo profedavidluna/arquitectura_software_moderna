@@ -1,0 +1,379 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "application-dashboard",
+    "title": "Application Dashboard",
+    "description": "Application performance monitoring - request rates, latency, errors, and service health",
+    "tags": ["application", "performance", "monitoring", "microservices"],
+    "timezone": "browser",
+    "schemaVersion": 37,
+    "version": 2,
+    "refresh": "30s",
+    "editable": true,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate (req/s)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{job=~\"$service\"}[5m])) by (job)",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15}
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Error Rate (%)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\", job=~\"$service\"}[5m])) by (job) / sum(rate(http_requests_total{job=~\"$service\"}[5m])) by (job) * 100",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          },
+          {
+            "expr": "5",
+            "legendFormat": "Alert Threshold (5%)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 2},
+                {"color": "red", "value": 5}
+              ]
+            },
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Alert Threshold (5%)"},
+              "properties": [
+                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "title": "Response Latency - P95",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=~\"$service\"}[5m])) by (le, job))",
+            "legendFormat": "{{job}} p95",
+            "refId": "A"
+          },
+          {
+            "expr": "2",
+            "legendFormat": "Alert Threshold (2s)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 2}
+              ]
+            },
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Alert Threshold (2s)"},
+              "properties": [
+                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "title": "Response Latency - P99",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=~\"$service\"}[5m])) by (le, job))",
+            "legendFormat": "{{job}} p99",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 3}
+              ]
+            },
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Active Requests (In-Progress)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(http_requests_in_progress{job=~\"$service\"}) by (job)",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15}
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Kafka Consumer Lag",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(kafka_consumer_lag) by (consumer_group, topic)",
+            "legendFormat": "{{consumer_group}} / {{topic}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1000},
+                {"color": "red", "value": 10000}
+              ]
+            },
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Service Health Status",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 24},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "up{job=~\".*-service\"}",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+            ]
+          }
+        },
+        "options": {
+          "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 8,
+        "title": "HTTP Status Codes Distribution",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"2..\", job=~\"$service\"}[5m]))",
+            "legendFormat": "2xx Success",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"3..\", job=~\"$service\"}[5m]))",
+            "legendFormat": "3xx Redirect",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"4..\", job=~\"$service\"}[5m]))",
+            "legendFormat": "4xx Client Error",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\", job=~\"$service\"}[5m]))",
+            "legendFormat": "5xx Server Error",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20, "stacking": {"mode": "normal"}}
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "JVM Heap Memory Usage",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{area=\"heap\", job=~\"$service\"}",
+            "legendFormat": "{{job}} used",
+            "refId": "A"
+          },
+          {
+            "expr": "jvm_memory_max_bytes{area=\"heap\", job=~\"$service\"}",
+            "legendFormat": "{{job}} max",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "JVM Thread Count",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 38},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "jvm_threads_live_threads{job=~\"$service\"}",
+            "legendFormat": "{{job}} live",
+            "refId": "A"
+          },
+          {
+            "expr": "jvm_threads_peak_threads{job=~\"$service\"}",
+            "legendFormat": "{{job}} peak",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth"}
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Kafka Messages Produced/Consumed",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 38},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(rate(kafka_producer_records_sent_total[5m])) by (topic)",
+            "legendFormat": "Produced: {{topic}}",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(kafka_consumer_records_consumed_total[5m])) by (topic)",
+            "legendFormat": "Consumed: {{topic}}",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          }
+        }
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "label": "Service",
+          "type": "query",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "query": "label_values(up{job=~\".*-service\"}, job)",
+          "refresh": 1,
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*-service"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Application Alerts",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "enable": true,
+          "expr": "ALERTS{alertstate=\"firing\", category=~\"application|performance\"}",
+          "titleFormat": "{{alertname}}",
+          "textFormat": "{{description}}",
+          "tagKeys": "severity"
+        }
+      ]
+    },
+    "links": [
+      {"title": "System Dashboard", "url": "/d/system-dashboard", "type": "dashboard"},
+      {"title": "Business Dashboard", "url": "/d/business-dashboard", "type": "dashboard"},
+      {"title": "Service Health Dashboard", "url": "/d/service-health-dashboard", "type": "dashboard"}
+    ]
+  }
+}

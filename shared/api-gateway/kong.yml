@@ -1,0 +1,355 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: user-service
+    url: http://user-service:8082
+    routes:
+      - name: user-service-route
+        paths:
+          - /api/v1/users
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: product-service
+    url: http://product-service:8083
+    routes:
+      - name: product-service-route
+        paths:
+          - /api/v1/products
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: cart-service
+    url: http://cart-service:8084
+    routes:
+      - name: cart-service-route
+        paths:
+          - /api/v1/cart
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: order-service
+    url: http://order-service:8085
+    routes:
+      - name: order-service-route
+        paths:
+          - /api/v1/orders
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: payment-service
+    url: http://payment-service:8086
+    routes:
+      - name: payment-service-route
+        paths:
+          - /api/v1/payments
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: inventory-service
+    url: http://inventory-service:8087
+    routes:
+      - name: inventory-service-route
+        paths:
+          - /api/v1/inventory
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: notification-service
+    url: http://notification-service:8088
+    routes:
+      - name: notification-service-route
+        paths:
+          - /api/v1/notifications
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600
+
+  - name: analytics-service
+    url: http://analytics-service:8089
+    routes:
+      - name: analytics-service-route
+        paths:
+          - /api/v1/analytics
+        strip_path: true
+    plugins:
+      - name: keycloak-oidc
+        config:
+          issuer: http://keycloak:8180/realms/ecommerce
+          client_id: web-client
+          client_secret: ${service-account-secret}
+          credentials:
+            - Authorization
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - http://localhost:3000
+            - http://localhost:8080
+            - http://localhost:8100
+            - http://localhost:4200
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+            - X-RateLimit-Limit
+            - X-RateLimit-Remaining
+          credentials: true
+          max_age: 3600

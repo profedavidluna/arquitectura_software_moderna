@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+  cache:
+    type: none
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/ecommerce
+
+cart:
+  tax-rate: 0.08
+  free-shipping-threshold: 50.00
+  default-shipping-amount: 5.99
+  expiration-days: 30
+
+services:
+  product-service:
+    url: http://localhost:8082
+
+logging:
+  level:
+    com.ecommerce.cartservice: DEBUG

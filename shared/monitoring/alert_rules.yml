@@ -1,0 +1,394 @@
+# Prometheus Alert Rules for E-commerce Platform
+# Version: 2.0.0
+# Last Updated: June 2025
+#
+# Alert Thresholds:
+#   - High Error Rate: >5% for 5 minutes
+#   - High Latency: p95 >2s for 5 minutes
+#   - Service Down: >30 seconds
+#   - Disk Usage: >80%
+#   - Memory Usage: >90%
+
+groups:
+  # ============================================================
+  # APPLICATION ALERTS
+  # ============================================================
+  - name: application_alerts
+    interval: 15s
+    rules:
+      # High error rate (> 5% for 5 minutes)
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)
+            /
+            sum(rate(http_requests_total[5m])) by (job)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+          team: backend
+        annotations:
+          summary: "High error rate detected for {{ $labels.job }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for service {{ $labels.job }} (threshold: 5%)"
+          dashboard: "http://grafana:3000/d/application-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-error-rate.md"
+
+      # High latency (p95 > 2 seconds for 5 minutes)
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+          team: backend
+        annotations:
+          summary: "High p95 latency detected for {{ $labels.job }}"
+          description: "p95 latency is {{ $value | humanizeDuration }} for service {{ $labels.job }} (threshold: 2s)"
+          dashboard: "http://grafana:3000/d/application-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-latency.md"
+
+      # Warning latency (p95 > 1 second for 5 minutes)
+      - alert: HighLatencyWarning
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          team: backend
+        annotations:
+          summary: "Elevated p95 latency for {{ $labels.job }}"
+          description: "p95 latency is {{ $value | humanizeDuration }} for service {{ $labels.job }} (warning threshold: 1s)"
+          dashboard: "http://grafana:3000/d/application-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-latency.md"
+
+      # High error rate warning (> 2% for 5 minutes)
+      - alert: ErrorRateWarning
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)
+            /
+            sum(rate(http_requests_total[5m])) by (job)
+          ) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+          team: backend
+        annotations:
+          summary: "Elevated error rate for {{ $labels.job }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for service {{ $labels.job }} (warning threshold: 2%)"
+          dashboard: "http://grafana:3000/d/application-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-error-rate.md"
+
+  # ============================================================
+  # AVAILABILITY ALERTS
+  # ============================================================
+  - name: availability_alerts
+    interval: 15s
+    rules:
+      # Service down (> 30 seconds)
+      - alert: ServiceDown
+        expr: up{job=~".*-service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: availability
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} (instance {{ $labels.instance }}) has been unreachable for more than 30 seconds"
+          dashboard: "http://grafana:3000/d/service-health-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/service-down.md"
+
+      # Infrastructure service down (> 1 minute)
+      - alert: InfrastructureServiceDown
+        expr: up{job=~"kafka|redis|elasticsearch|keycloak|api-gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+          team: platform
+        annotations:
+          summary: "Infrastructure service {{ $labels.job }} is down"
+          description: "Infrastructure service {{ $labels.job }} has been unreachable for more than 1 minute"
+          dashboard: "http://grafana:3000/d/service-health-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/infrastructure-down.md"
+
+      # Multiple services down simultaneously
+      - alert: MultipleServicesDown
+        expr: count(up{job=~".*-service"} == 0) > 2
+        for: 30s
+        labels:
+          severity: critical
+          category: availability
+          team: platform
+        annotations:
+          summary: "Multiple services are down"
+          description: "{{ $value }} services are currently unreachable - possible infrastructure issue"
+          dashboard: "http://grafana:3000/d/service-health-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/multiple-services-down.md"
+
+  # ============================================================
+  # RESOURCE ALERTS
+  # ============================================================
+  - name: resource_alerts
+    interval: 30s
+    rules:
+      # Disk usage > 80% (warning)
+      - alert: HighDiskUsage
+        expr: |
+          (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"})) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+          team: platform
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.mountpoint }} (threshold: 80%)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-disk-usage.md"
+
+      # Disk usage > 90% (critical)
+      - alert: CriticalDiskUsage
+        expr: |
+          (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"})) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          category: resource
+          team: platform
+        annotations:
+          summary: "Critical disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.mountpoint }} (threshold: 90%)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/critical-disk-usage.md"
+
+      # Memory usage > 90% (critical)
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: resource
+          team: platform
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }} (threshold: 90%)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-memory-usage.md"
+
+      # Memory usage > 80% (warning)
+      - alert: MemoryUsageWarning
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+          team: platform
+        annotations:
+          summary: "Elevated memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }} (warning threshold: 80%)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-memory-usage.md"
+
+      # High CPU usage > 80%
+      - alert: HighCPUUsage
+        expr: |
+          (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+          team: platform
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }} (threshold: 80%)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-cpu-usage.md"
+
+      # Critical CPU usage > 95%
+      - alert: CriticalCPUUsage
+        expr: |
+          (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: resource
+          team: platform
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.instance }} (threshold: 95%)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/critical-cpu-usage.md"
+
+  # ============================================================
+  # DATABASE ALERTS
+  # ============================================================
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # High database connection usage (> 80%)
+      - alert: HighDatabaseConnectionUsage
+        expr: |
+          pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+          team: platform
+        annotations:
+          summary: "High database connection usage for {{ $labels.instance }}"
+          description: "Database connection pool is {{ $value | humanizePercentage }} full for {{ $labels.instance }}"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/database-connection-usage.md"
+
+      # Database deadlocks
+      - alert: DatabaseDeadlocks
+        expr: |
+          rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+          team: platform
+        annotations:
+          summary: "Database deadlocks detected for {{ $labels.datname }}"
+          description: "Database {{ $labels.datname }} is experiencing deadlocks"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/database-deadlocks.md"
+
+      # Slow queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          pg_stat_activity_max_tx_duration > 30
+        for: 2m
+        labels:
+          severity: warning
+          category: database
+          team: platform
+        annotations:
+          summary: "Slow database queries on {{ $labels.instance }}"
+          description: "Long-running transaction detected ({{ $value }}s) on {{ $labels.instance }}"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/slow-queries.md"
+
+  # ============================================================
+  # MESSAGING ALERTS
+  # ============================================================
+  - name: messaging_alerts
+    interval: 30s
+    rules:
+      # High Kafka consumer lag (> 10000 messages)
+      - alert: HighKafkaConsumerLag
+        expr: kafka_consumer_lag > 10000
+        for: 5m
+        labels:
+          severity: warning
+          category: messaging
+          team: platform
+        annotations:
+          summary: "High Kafka consumer lag for {{ $labels.consumer_group }}"
+          description: "Consumer lag is {{ $value }} messages for group {{ $labels.consumer_group }} on topic {{ $labels.topic }}"
+          dashboard: "http://grafana:3000/d/application-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/kafka-consumer-lag.md"
+
+      # Kafka consumer stalled
+      - alert: KafkaConsumerStalled
+        expr: |
+          delta(kafka_consumer_lag[5m]) == 0
+          and
+          kafka_consumer_lag > 0
+        for: 10m
+        labels:
+          severity: critical
+          category: messaging
+          team: platform
+        annotations:
+          summary: "Kafka consumer stalled for {{ $labels.consumer_group }}"
+          description: "Consumer group {{ $labels.consumer_group }} is not processing messages from topic {{ $labels.topic }}"
+          dashboard: "http://grafana:3000/d/application-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/kafka-consumer-stalled.md"
+
+      # Kafka broker down
+      - alert: KafkaBrokerDown
+        expr: kafka_brokers < 3
+        for: 1m
+        labels:
+          severity: critical
+          category: messaging
+          team: platform
+        annotations:
+          summary: "Kafka broker(s) down"
+          description: "Only {{ $value }} Kafka brokers are available (expected: 3)"
+          dashboard: "http://grafana:3000/d/system-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/kafka-broker-down.md"
+
+  # ============================================================
+  # BUSINESS ALERTS
+  # ============================================================
+  - name: business_alerts
+    interval: 60s
+    rules:
+      # Low order volume (< 10 orders/hour)
+      - alert: LowOrderVolume
+        expr: |
+          sum(rate(orders_created_total[1h])) * 3600 < 10
+        for: 1h
+        labels:
+          severity: warning
+          category: business
+          team: backend
+        annotations:
+          summary: "Low order volume detected"
+          description: "Order creation rate is {{ $value | printf \"%.1f\" }} orders/hour (threshold: 10 orders/hour)"
+          dashboard: "http://grafana:3000/d/business-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/low-order-volume.md"
+
+      # High payment failure rate (> 10%)
+      - alert: HighPaymentFailureRate
+        expr: |
+          (
+            sum(rate(payment_attempts_total{status="failed"}[1h])) by (payment_method)
+            /
+            sum(rate(payment_attempts_total[1h])) by (payment_method)
+          ) > 0.1
+        for: 30m
+        labels:
+          severity: critical
+          category: business
+          team: backend
+        annotations:
+          summary: "High payment failure rate for {{ $labels.payment_method }}"
+          description: "Payment failure rate is {{ $value | humanizePercentage }} for {{ $labels.payment_method }} (threshold: 10%)"
+          dashboard: "http://grafana:3000/d/business-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-payment-failure-rate.md"
+
+      # High cart abandonment rate (> 80%)
+      - alert: HighCartAbandonmentRate
+        expr: |
+          (
+            (sum(rate(carts_created_total[1h])) - sum(rate(orders_created_total[1h])))
+            /
+            sum(rate(carts_created_total[1h]))
+          ) > 0.8
+        for: 2h
+        labels:
+          severity: warning
+          category: business
+          team: backend
+        annotations:
+          summary: "High cart abandonment rate"
+          description: "Cart abandonment rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          dashboard: "http://grafana:3000/d/business-dashboard"
+          runbook: "https://github.com/ecommerce/runbooks/blob/main/high-cart-abandonment.md"

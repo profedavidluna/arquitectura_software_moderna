@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Databases
   user-db:
@@ -13,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - user-db-data:/var/lib/postgresql/data
+      - ./init-user-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -30,6 +29,7 @@ services:
       - "5433:5432"
     volumes:
       - product-db-data:/var/lib/postgresql/data
+      - ./init-product-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -47,6 +47,7 @@ services:
       - "5434:5432"
     volumes:
       - order-db-data:/var/lib/postgresql/data
+      - ./init-order-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -64,6 +65,7 @@ services:
       - "5435:5432"
     volumes:
       - payment-db-data:/var/lib/postgresql/data
+      - ./init-payment-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -81,6 +83,7 @@ services:
       - "5436:5432"
     volumes:
       - inventory-db-data:/var/lib/postgresql/data
+      - ./init-inventory-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -98,6 +101,7 @@ services:
       - "5437:5432"
     volumes:
       - cart-db-data:/var/lib/postgresql/data
+      - ./init-cart-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -115,13 +119,14 @@ services:
       - "5438:5432"
     volumes:
       - analytics-db-data:/var/lib/postgresql/data
+      - ./init-analytics-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis Cache
+  # Redis Cache for Cart Caching
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -129,11 +134,27 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_MAXMEMORY=256mb
+      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+    networks:
+      - ecommerce-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "6379", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
   # Kafka & Zookeeper
   zookeeper:
@@ -147,6 +168,13 @@ services:
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
       - zookeeper-logs:/var/lib/zookeeper/log
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   kafka-broker-1:
     image: confluentinc/cp-kafka:7.4.0
@@ -159,12 +187,31 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:29092,PLAINTEXT_HOST://kafka-broker-1:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 6000
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"
     volumes:
       - kafka-broker-1-data:/var/lib/kafka/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   kafka-broker-2:
     image: confluentinc/cp-kafka:7.4.0
@@ -177,11 +224,31 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-2:29092,PLAINTEXT_HOST://kafka-broker-2:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 6000
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9093:9092"
     volumes:
       - kafka-broker-2-data:/var/lib/kafka/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   kafka-broker-3:
     image: confluentinc/cp-kafka:7.4.0
@@ -194,11 +261,31 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-3:29092,PLAINTEXT_HOST://kafka-broker-3:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 6000
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9094:9092"
     volumes:
       - kafka-broker-3-data:/var/lib/kafka/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # Keycloak
   keycloak:
@@ -211,17 +298,23 @@ services:
       KC_DB_URL: jdbc:postgresql://user-db:5432/keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
+      KC_FEATURES: admin2
     ports:
       - "8180:8080"
     depends_on:
       user-db:
         condition: service_healthy
     command: start-dev
+    volumes:
+      - ./keycloak-config/realm-config.json:/opt/keycloak/data/import/realm-config.json
+      - ./keycloak-config/users.json:/opt/keycloak/data/import/users.json
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 15s
       timeout: 5s
       retries: 5
+    networks:
+      - ecommerce-network
 
   # Elasticsearch
   elasticsearch:
@@ -231,30 +324,42 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ELASTIC_PASSWORD=elastic"
     ports:
       - "9200:9200"
+      - "9300:9300"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - ecommerce-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   # Logstash
   logstash:
     image: docker.elastic.co/logstash/logstash:8.5.0
     container_name: logstash
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./shared/logging/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     environment:
       - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
     ports:
-      - "5000:5000"
+      - "5044:5044"
+      - "5000:5000/udp"
     depends_on:
       elasticsearch:
         condition: service_healthy
-    command: logstash -f /usr/share/logstash/pipeline/logstash.conf
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/pipelines/_default || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # Kibana
   kibana:
@@ -262,16 +367,21 @@ services:
     container_name: kibana
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: elastic
     ports:
       - "5601:5601"
     depends_on:
       elasticsearch:
         condition: service_healthy
+    networks:
+      - ecommerce-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   # Prometheus
   prometheus:
@@ -279,17 +389,21 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - ecommerce-network
 
   # Grafana
   grafana:
@@ -298,10 +412,28 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_SECURITY_ADMIN_USER: admin
+      GF_AUTH_ANONYMOUS_.ORG_ROLE: Admin
+      GF_AUTH_ANONYMOUS_.ORG_NAME: Main Org.
+      GF_AUTH_ANONYMOUS_.ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_.AUTO_ORG_CREATE: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_OAUTH_AUTO_LOGIN: "false"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SECURITY_ALLOW_HTTP_HOST_HEADER: "*"
+      GF_SECURITY_ALLOW_ORIGIN: "*"
+      GF_SECURITY_COOKIE_SAMESITE: "none"
+      GF_SECURITY_COOKIE_SECURE: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_USERS_AUTO_ASSIGN_ORG: "true"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Admin
     ports:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana-dashboards:/var/lib/grafana/dashboards
     depends_on:
       prometheus:
         condition: service_healthy
@@ -310,18 +442,314 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - ecommerce-network
 
-  # Jaeger
+  # Jaeger - Distributed Tracing
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.51
     container_name: jaeger
     ports:
-      - "6831:6831/udp"
-      - "16686:16686"
+      - "6831:6831/udp"      # Jaeger agent (Thrift compact)
+      - "6832:6832/udp"      # Jaeger agent (Thrift binary)
+      - "16686:16686"        # Jaeger UI
+      - "14268:14268"        # Jaeger collector HTTP
+      - "14250:14250"        # Jaeger collector gRPC
+      - "4317:4317"          # OTLP gRPC receiver
+      - "4318:4318"          # OTLP HTTP receiver
+      - "9411:9411"          # Zipkin compatible endpoint
     environment:
       COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      COLLECTOR_OTLP_ENABLED: "true"
+      QUERY_BASE_PATH: "/jaeger"
+      SPAN_STORAGE_TYPE: "memory"
+      MEMORY_MAX_TRACES: 100000
+      SAMPLING_STRATEGIES_FILE: "/etc/jaeger/sampling-strategies.json"
+    volumes:
+      - ./tracing/jaeger-config.yml:/etc/jaeger/sampling-strategies.json:ro
+    networks:
+      - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:14269"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:16686/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # API Gateway
+  api-gateway:
+    image: kong:3.4
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_LOG_LEVEL: info
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./shared/api-gateway/kong.yml:/kong/kong.yml
+    depends_on:
+      - keycloak
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # User Service (Java)
+  user-service:
+    image: user-service:latest
+    container_name: user-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ecommerce
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: user-service
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      user-db:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Product Service (Java)
+  product-service:
+    image: product-service:latest
+    container_name: product-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/product_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: product-service
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
+    depends_on:
+      product-db:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Cart Service (Java)
+  cart-service:
+    image: cart-service:latest
+    container_name: cart-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://cart-db:5432/cart_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      PRODUCT_SERVICE_URL: http://product-service:8082
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: cart-service
+      SERVER_PORT: 8083
+    ports:
+      - "8083:8083"
+    depends_on:
+      cart-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Order Service (Java)
+  order-service:
+    image: order-service:latest
+    container_name: order-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      CART_SERVICE_URL: http://cart-service:8083
+      INVENTORY_SERVICE_URL: http://inventory-service:8086
+      PAYMENT_SERVICE_URL: http://payment-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: order-service
+      SERVER_PORT: 8085
+    ports:
+      - "8085:8085"
+    depends_on:
+      order-db:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Payment Service (Java)
+  payment-service:
+    image: payment-service:latest
+    container_name: payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: payment-service
+      SERVER_PORT: 8084
+    ports:
+      - "8084:8084"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Inventory Service (Java)
+  inventory-service:
+    image: inventory-service:latest
+    container_name: inventory-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: inventory-service
+      SERVER_PORT: 8086
+    ports:
+      - "8086:8086"
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Notification Service (Java)
+  notification-service:
+    image: notification-service:latest
+    container_name: notification-service
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: notification-service
+      SERVER_PORT: 8087
+    ports:
+      - "8087:8087"
+    depends_on:
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Analytics Service (Java)
+  analytics-service:
+    image: analytics-service:latest
+    container_name: analytics-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://analytics-db:5432/analytics_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: analytics-service
+      SERVER_PORT: 8088
+    ports:
+      - "8088:8088"
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      kafka-broker-1:
+        condition: service_started
+      kafka-broker-2:
+        condition: service_started
+      kafka-broker-3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Frontend (React)
+  frontend:
+    image: nginx:alpine
+    container_name: frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/build:/usr/share/nginx/html
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -345,5 +773,5 @@ volumes:
   grafana-data:
 
 networks:
-  default:
+  ecommerce-network:
     name: ecommerce-network

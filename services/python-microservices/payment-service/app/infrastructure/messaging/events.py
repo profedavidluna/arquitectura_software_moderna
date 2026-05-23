@@ -1,0 +1,7 @@
+from enum import Enum
+
+
+class PaymentEvent(str, Enum):
+    PAYMENT_COMPLETED = "PAYMENT_COMPLETED"
+    PAYMENT_FAILED = "PAYMENT_FAILED"
+    PAYMENT_REFUNDED = "PAYMENT_REFUNDED"

@@ -25,17 +25,20 @@ This course teaches modern software architecture principles through hands-on imp
 
 ## 🏗️ Project: Ecommerce Platform
 
-### Core Features
+### Core Features (10 Microservices)
 
-- **User Management**: Registration, authentication, profile management
-- **Product Catalog**: Browse, search, filter products
-- **Shopping Cart**: Add/remove items, manage quantities
-- **Checkout Process**: Multi-step order creation
-- **Payment Processing**: Stripe/PayPal integration
-- **Inventory Management**: Stock tracking and reservations
-- **Order Management**: Order creation, tracking, fulfillment
-- **Notifications**: Email confirmations and updates
-- **Analytics**: Sales metrics and business intelligence
+1. **API Gateway Service** (8080) - Single entry point for all API requests
+2. **Authentication Service** (8081) - Centralized OAuth2/OIDC via Keycloak
+3. **User Service** (8082) - User registration, profiles, and address management
+4. **Product Service** (8083) - Product catalog with search, filtering, and details
+5. **Cart Service** (8084) - Shopping cart management with persistence
+6. **Order Service** (8085) - Multi-step checkout and order management
+7. **Payment Service** (8086) - Payment processing with Stripe/PayPal integration
+8. **Inventory Service** (8087) - Stock tracking, reservations, and depletion alerts
+9. **Notification Service** (8088) - Email confirmations, receipts, and shipping updates
+10. **Analytics Service** (8089) - Business intelligence, reports, and metrics
+
+Each service is implemented in 4 programming languages: Java, .NET, Node.js, and Python
 
 ### Non-Functional Requirements
 
@@ -125,7 +128,22 @@ mvn spring-boot:run
 ## 📖 Documentation
 
 - **[Architecture Documentation](./docs/architecture/)**: System design, C4 models, diagrams
-- **[Architecture Decision Records](./docs/adrs/)**: Key architectural decisions
+- **[Architecture Decision Records](./docs/adrs/)**: 15 key architectural decisions including:
+  - ADR-001: Microservices Architecture
+  - ADR-002: Database Per Service Pattern
+  - ADR-003: Kafka for Async Communication
+  - ADR-004: Keycloak for Centralized Auth
+  - ADR-005: API Gateway Pattern
+  - ADR-006: REST APIs for Sync Communication
+  - ADR-007: Circuit Breaker Pattern
+  - ADR-008: Saga Pattern for Distributed Transactions
+  - ADR-009: Docker Compose for Local Development
+  - ADR-010: ELK Stack for Centralized Logging
+  - ADR-011: Prometheus + Grafana for Metrics
+  - ADR-012: Jaeger for Distributed Tracing
+  - ADR-013: GitHub Actions for CI/CD
+  - ADR-014: Three-Language Implementation
+  - ADR-015: 80% Code Coverage Requirement
 - **[Guides & Tutorials](./docs/guides/)**: Setup, deployment, troubleshooting
 - **[Diagrams](./docs/diagrams/)**: Visual representations of the system
 
@@ -161,54 +179,64 @@ mvn spring-boot:run
 
 After completing this course, students will be able to:
 
-1. **Design scalable microservices architectures**
-2. **Implement distributed systems patterns** (Saga, Circuit Breaker, etc.)
-3. **Build resilient and observable systems**
-4. **Apply SOLID principles and design patterns**
-5. **Implement comprehensive testing strategies**
-6. **Set up CI/CD pipelines**
-7. **Deploy and monitor production systems**
-8. **Work with multiple programming languages and frameworks**
+1. **Design scalable microservices architectures** following modern best practices
+2. **Implement distributed systems patterns** including Saga, Circuit Breaker, Retry, Timeout, and Bulkhead patterns
+3. **Build resilient and observable systems** with centralized logging, distributed tracing, and metrics collection
+4. **Apply SOLID principles and design patterns** across multiple programming languages
+5. **Implement comprehensive testing strategies** achieving 80%+ code coverage with unit, integration, contract, and E2E tests
+6. **Set up complete CI/CD pipelines** with GitHub Actions, Docker optimization, and automated deployment
+7. **Deploy and monitor production systems** using industry-standard tools (ELK, Prometheus, Grafana, Jaeger)
+8. **Work with multiple programming languages and frameworks** (Java/Spring Boot, .NET/ASP.NET Core, Node.js/Express, Python/FastAPI)
+9. **Implement security best practices** including OAuth2/OIDC, TLS encryption, and PCI compliance
+10. **Document architecture decisions** using Architecture Decision Records (ADRs)
 
-## 📋 Implementation Phases
+## 📋 Implementation Phases (Total: ~680 hours)
 
-### Phase 1: Foundation & Infrastructure Setup
-- Repository structure
-- Docker Compose stack
-- Keycloak configuration
-- Database schemas
-- Kafka topics
-- API Gateway
-- Monitoring stack
+### Phase 1: Foundation & Infrastructure Setup (40 hours)
+- Repository structure and branch organization
+- Docker Compose stack with all infrastructure services
+- Keycloak OAuth2/OIDC configuration
+- Database schemas for 7 PostgreSQL instances
+- Kafka topics and broker configuration
+- API Gateway setup (Kong or custom)
+- Complete monitoring stack (ELK, Prometheus, Grafana, Jaeger)
 
-### Phase 2-5: Microservices Implementation
-- User Service (Java, .NET, Node.js, Python)
-- Product Service
-- Cart Service
-- Order Service
-- Payment Service
-- Inventory Service
-- Notification Service
-- Analytics Service
+### Phase 2-5: Microservices Implementation (480 hours)
+- **User Service** (Java, .NET, Node.js, Python) - User management and profiles
+- **Product Service** (Java, .NET, Node.js, Python) - Product catalog and search
+- **Cart Service** (Java, .NET, Node.js, Python) - Shopping cart management
+- **Order Service** (Java, .NET, Node.js, Python) - Order processing and checkout
+- **Payment Service** (Java, .NET, Node.js, Python) - Payment processing integration
+- **Inventory Service** (Java, .NET, Node.js, Python) - Stock and inventory management
+- **Notification Service** (Java, .NET, Node.js, Python) - Email and notification system
+- **Analytics Service** (Java, .NET, Node.js, Python) - Business intelligence and reporting
 
-### Phase 6: Quality Assurance & Testing
-- End-to-end testing
-- Performance testing
-- Security testing
-- Load testing
-- Chaos engineering
+### Phase 6: Quality Assurance & Testing (40 hours)
+- End-to-end testing across all services
+- Performance testing (10,000 concurrent users target)
+- Security testing (OAuth2, TLS, PCI compliance)
+- Load testing and stress testing
+- Chaos engineering for resilience validation
 
-### Phase 7: CI/CD Pipeline & Deployment
-- GitHub Actions workflows
-- Docker image optimization
-- Deployment automation
-- Secrets management
+### Phase 7: CI/CD Pipeline & Deployment (30 hours)
+- GitHub Actions workflows for all languages
+- Docker image optimization and multi-stage builds
+- Deployment automation for all environments
+- Secrets management and secure configuration
 
-### Phase 8: Documentation & Course Materials
-- Architecture documentation
-- API documentation
-- Deployment guides
-- Course materials and slides
+### Phase 8: Documentation & Course Materials (50 hours)
+- Architecture documentation with C4 models
+- API documentation with OpenAPI/Swagger
+- Deployment guides for all environments
+- Course materials, slides, and instructional content
+
+### Phase 9: Final Integration & Optimization (40 hours)
+- Integration testing across all services
+- Documentation review and quality assurance
+- Code coverage verification (80% minimum target)
+- Performance optimization and tuning
+- Security hardening and compliance verification
+- Repository cleanup and finalization
 
 ## 🔐 Security
 
@@ -235,13 +263,26 @@ After completing this course, students will be able to:
 - Request flow visualization
 - Performance bottleneck identification
 
-## 🧪 Testing Strategy
+## 🧪 Testing Strategy & Success Metrics
 
-- **Unit Tests**: 40% of effort (target 80% coverage)
-- **Integration Tests**: 30% of effort
-- **Contract Tests**: 15% of effort
-- **E2E Tests**: 10% of effort
-- **Performance Tests**: 5% of effort
+### Testing Distribution
+- **Unit Tests**: 40% of effort (target 80%+ coverage across all services)
+- **Integration Tests**: 30% of effort (service-to-service communication)
+- **Contract Tests**: 15% of effort (Pact-based consumer-driven contracts)
+- **E2E Tests**: 10% of effort (complete user journey validation)
+- **Performance Tests**: 5% of effort (load, stress, and chaos testing)
+
+### Success Metrics
+- ✅ **Code Coverage**: Minimum 80% across all services and languages
+- ✅ **Performance**: API response time < 200ms (p95) under load
+- ✅ **Scalability**: Support for 10,000 concurrent users
+- ✅ **Availability**: 99.5% uptime SLA in production-like environments
+- ✅ **Security**: Full OAuth2/OIDC implementation with TLS 1.3
+- ✅ **Observability**: Complete monitoring stack with alerts
+- ✅ **Resilience**: Circuit breakers, retry logic, and graceful degradation
+- ✅ **Documentation**: 15 Architecture Decision Records (ADRs) documented
+- ✅ **CI/CD**: Fully automated pipeline with GitHub Actions
+- ✅ **Multi-language**: All 10 services implemented in 4 programming languages
 
 ## 🤝 Contributing
 

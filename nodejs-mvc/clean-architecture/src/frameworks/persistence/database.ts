@@ -1,0 +1,24 @@
+import { Pool } from 'pg';
+
+/**
+ * @layer Frameworks & Drivers
+ * @description PostgreSQL connection pool configuration.
+ * Uses environment variables for connection parameters.
+ */
+
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'clean_db',
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle PostgreSQL client', err);
+});
+
+export { pool };

@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # Shared PostgreSQL Database
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: product-catalog-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # Hexagonal Architecture (Port 3081)
+  # ============================================================
+  hexagonal:
+    build:
+      context: ./hexagonal-architecture
+      dockerfile: Dockerfile
+    container_name: product-catalog-hexagonal
+    ports:
+      - "3081:3081"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=hexagonal_db
+      - USE_POSTGRES=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================================
+  # Layered Architecture (Port 3082)
+  # ============================================================
+  layered:
+    build:
+      context: ./layered-architecture
+      dockerfile: Dockerfile
+    container_name: product-catalog-layered
+    ports:
+      - "3082:3082"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=layered_db
+      - USE_POSTGRES=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================================
+  # Clean Architecture (Port 3083)
+  # ============================================================
+  clean:
+    build:
+      context: ./clean-architecture
+      dockerfile: Dockerfile
+    container_name: product-catalog-clean
+    ports:
+      - "3083:3083"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=clean_db
+      - USE_POSTGRES=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

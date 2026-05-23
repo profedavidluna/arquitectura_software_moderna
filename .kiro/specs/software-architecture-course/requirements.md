@@ -1,5 +1,24 @@
-# Functional and Non-Functional Requirements
+# Requirements Document: Software Architecture Course - MVC Architecture Patterns
 
+## Introduction
+
+This course teaches software architecture through practical implementation of an ecommerce domain using three distinct architecture patterns: **Hexagonal Architecture (Ports & Adapters)**, **Vertical Layer Architecture (Layered)**, and **Clean Architecture**. Each pattern will be implemented in four programming languages (Java, .NET, Node.js, Python) to demonstrate how architectural decisions affect code organization, dependencies, and testability.
+
+The ecommerce domain covers User Management, Product Catalog, Shopping Cart, and Checkout functionality. The focus is on understanding how each architecture handles the same business requirements differently, emphasizing separation of concerns, dependency management, and architectural trade-offs.
+
+## Glossary
+
+- **Hexagonal Architecture**: Architecture pattern that separates core domain logic from external concerns (UI, databases, frameworks) through ports and adapters
+- **Vertical Layer Architecture**: Traditional layered architecture with Presentation, Business Logic, and Data layers, where dependencies flow downward
+- **Clean Architecture**: Architecture pattern following the Dependency Rule where inner layers (business logic) don't depend on outer layers (frameworks, UI)
+- **Port**: Interface that defines how the core domain communicates with the outside world
+- **Adapter**: Implementation that connects ports to external systems (database, web framework, messaging)
+- **Entity**: Business object that contains business logic and invariants
+- **Use Case**: Business operation that coordinates entities to accomplish a goal
+- **Controller**: Component that receives input and translates it into use case calls
+- **Presenter**: Component that formats data from use cases for display in the UI
+- **Framework**: External libraries and tools (Spring Boot, ASP.NET Core, Express.js, FastAPI)
+- **Database**: Persistence mechanism (PostgreSQL, Redis)
 ## Functional Requirements
 
 ### FR-1: User Management
@@ -68,7 +87,6 @@
   - User can set one default address
   - User can delete addresses
   - Address validation prevents invalid entries
-
 ### FR-2: Product Catalog
 
 #### FR-2.1: Browse Products
@@ -133,7 +151,6 @@
   - Review text max 1000 characters
   - Only verified purchasers can review
   - Reviews moderated before display (optional)
-
 ### FR-3: Shopping Cart
 
 #### FR-3.1: Add to Cart
@@ -199,7 +216,6 @@
   - Discount applied correctly
   - Cannot apply expired coupons
   - Cannot apply multiple coupons (or limit to 1)
-
 ### FR-4: Checkout and Orders
 
 #### FR-4.1: Checkout Process
@@ -283,7 +299,6 @@
   - Cannot cancel SHIPPED or DELIVERED orders
   - Refund processed within 24 hours
   - Inventory released immediately
-
 ### FR-5: Payment Processing
 
 #### FR-5.1: Process Payment
@@ -333,7 +348,6 @@
   - Refund amount matches original payment
   - Refund status tracked
   - Customer notified of refund
-
 ### FR-6: Inventory Management
 
 #### FR-6.1: Track Stock Levels
@@ -379,7 +393,6 @@
   - Depletion recorded with order ID
   - Stock count accurate
   - Audit trail maintained
-
 ### FR-7: Notifications
 
 #### FR-7.1: Order Confirmation Email
@@ -426,127 +439,139 @@
   - Email contains tracking number
   - Email includes estimated delivery date
   - Email sent to correct address
-
----
-
 ## Non-Functional Requirements
 
-### NFR-1: Performance
+### NFR-1: Architecture Pattern Compliance
 
-#### NFR-1.1: Response Time
+#### NFR-1.1: Hexagonal Architecture Compliance
+- **Requirement**: All implementations must follow Hexagonal Architecture principles
+- **Measurement**: Code structure and dependency direction
+- **Implementation**:
+  - Core domain entities in separate package/module
+  - Ports defined as interfaces in core layer
+  - Adapters implement ports and depend on core
+  - No dependencies from core to adapters
+- **Rationale**: Demonstrate separation of concerns and testability
+
+#### NFR-1.2: Vertical Layer Architecture Compliance
+- **Requirement**: All implementations must follow Vertical Layer Architecture principles
+- **Measurement**: Code structure and dependency direction
+- **Implementation**:
+  - Clear separation: Presentation, Business, Data layers
+  - Dependencies flow downward (Presentation → Business → Data)
+  - Each layer only depends on the layer below
+  - No cross-layer dependencies
+- **Rationale**: Demonstrate traditional layered architecture patterns
+
+#### NFR-1.3: Clean Architecture Compliance
+- **Requirement**: All implementations must follow Clean Architecture principles
+- **Measurement**: Code structure and dependency direction
+- **Implementation**:
+  - Entities (business objects) in innermost layer
+  - Use cases (business operations) in middle layer
+  - Frameworks and drivers in outermost layer
+  - Dependencies flow inward (outer → inner)
+  - Inner layers unaware of outer layers
+- **Rationale**: Demonstrate dependency inversion and business logic isolation
+
+#### NFR-1.4: Architecture Comparison
+- **Requirement**: Each architecture must demonstrate its strengths and trade-offs
+- **Measurement**: Code organization, testability, maintainability
+- **Implementation**:
+  - Hexagonal: Emphasize testability through port/adapter separation
+  - Vertical Layer: Emphasize simplicity and clear layer boundaries
+  - Clean Architecture: Emphasize business logic independence from frameworks
+- **Rationale**: Help students understand architectural decision trade-offs
+### NFR-2: Code Organization
+
+#### NFR-2.1: Package/Module Structure
+- **Requirement**: Each architecture must have a clear package/module structure
+- **Measurement**: File and folder organization
+- **Implementation**:
+  - Hexagonal: `core/`, `ports/`, `adapters/`
+  - Vertical Layer: `presentation/`, `business/`, `data/`
+  - Clean Architecture: `entities/`, `usecases/`, `interfaces/`, `adapters/`
+- **Rationale**: Visual clarity of architectural boundaries
+
+#### NFR-2.2: Dependency Direction
+- **Requirement**: Dependencies must flow in the correct direction for each architecture
+- **Measurement**: Import/dependency analysis
+- **Implementation**:
+  - Hexagonal: Core → Ports, Adapters → Ports
+  - Vertical Layer: Presentation → Business → Data
+  - Clean Architecture: Outer → Inner (inward dependency flow)
+- **Rationale**: Demonstrate architectural discipline
+
+#### NFR-2.3: Separation of Concerns
+- **Requirement**: Business logic must be separated from infrastructure concerns
+- **Measurement**: Code review and static analysis
+- **Implementation**:
+  - Business rules in core/use case classes
+  - Framework-specific code in adapters/presenters
+  - No framework imports in business logic
+- **Rationale**: Testability and maintainability
+### NFR-3: Testability
+
+#### NFR-3.1: Unit Test Coverage
+- **Requirement**: Minimum 80% code coverage with unit tests
+- **Measurement**: Code coverage percentage
+- **Implementation**:
+  - JUnit 5 (Java), xUnit (.NET), Jest (Node), pytest (Python)
+  - Mocking frameworks (Mockito, Moq, Jest mocks, unittest.mock)
+  - Test automation in CI/CD pipeline
+- **Rationale**: Catch bugs early and verify architectural compliance
+
+#### NFR-3.2: Business Logic Testing
+- **Requirement**: All business logic must be testable without framework dependencies
+- **Measurement**: Test execution without framework startup
+- **Implementation**:
+  - Test entities and use cases in isolation
+  - Mock ports/adapters for business logic tests
+  - No database or framework startup required for unit tests
+- **Rationale**: Fast feedback and architectural validation
+
+#### NFR-3.3: Adapter Testing
+- **Requirement**: All adapters must have integration tests
+- **Measurement**: Integration test count and coverage
+- **Implementation**:
+  - Test database adapters with real database
+  - Test web framework adapters with HTTP requests
+  - Test messaging adapters with message broker
+- **Rationale**: Verify integration with external systems
+
+#### NFR-3.4: Architecture Validation Tests
+- **Requirement**: Tests must verify architectural constraints
+- **Measurement**: Architecture test coverage
+- **Implementation**:
+  - Test that core layer has no dependencies on adapters
+  - Test that dependencies flow in correct direction
+  - Test that business logic is framework-independent
+- **Rationale**: Prevent architectural drift
+### NFR-4: Performance
+
+#### NFR-4.1: Response Time
 - **Requirement**: API response time must be < 200ms (p95) for all endpoints
-- **Measurement**: Response time from API Gateway to client
+- **Measurement**: Response time from API endpoint to client
 - **Exceptions**: 
   - Search operations: < 500ms (p95)
   - Report generation: < 5 seconds
 - **Rationale**: User experience, system responsiveness
 
-#### NFR-1.2: Throughput
-- **Requirement**: System must handle 100 orders/second
-- **Measurement**: Orders processed per second
-- **Rationale**: Peak load during sales events
-
-#### NFR-1.3: Database Query Performance
+#### NFR-4.2: Database Query Performance
 - **Requirement**: Database queries must complete within 10 seconds
 - **Measurement**: Query execution time
 - **Rationale**: Prevent slow queries from blocking system
 
-#### NFR-1.4: Cache Hit Rate
+#### NFR-4.3: Cache Performance
 - **Requirement**: Cache hit rate must be > 80% for frequently accessed data
 - **Measurement**: Cache hits / total requests
 - **Rationale**: Reduce database load
-
-### NFR-2: Scalability
-
-#### NFR-2.1: Horizontal Scaling
-- **Requirement**: System must scale horizontally to support 10,000 concurrent users
-- **Measurement**: Number of concurrent users supported
-- **Implementation**: 
-  - Stateless services
-  - Load balancing
-  - Database connection pooling
-- **Rationale**: Support peak load
-
-#### NFR-2.2: Service Scaling
-- **Requirement**: Each service must scale independently
-- **Measurement**: Service instances can be added/removed
-- **Implementation**:
-  - Docker containers
-  - Kubernetes orchestration (optional)
-  - Load balancing per service
-- **Rationale**: Efficient resource utilization
-
-#### NFR-2.3: Database Scaling
-- **Requirement**: Databases must support 10,000 concurrent connections
-- **Measurement**: Connection pool size
-- **Implementation**:
-  - Connection pooling (max 100 connections per service)
-  - Read replicas for read-heavy services
-  - Sharding for large tables (future)
-- **Rationale**: Prevent connection exhaustion
-
-### NFR-3: Availability
-
-#### NFR-3.1: Uptime SLA
-- **Requirement**: System must maintain 99.5% uptime
-- **Measurement**: (Total time - Downtime) / Total time
-- **Calculation**: 99.5% = 3.6 hours downtime per month
-- **Rationale**: Business requirement
-
-#### NFR-3.2: Service Availability
-- **Requirement**: Each service must be available 99.5% of the time
-- **Measurement**: Service uptime
-- **Implementation**:
-  - Health checks every 30 seconds
-  - Automatic restart on failure
-  - Circuit breakers for cascading failures
-- **Rationale**: Prevent single point of failure
-
-#### NFR-3.3: Graceful Degradation
-- **Requirement**: System must degrade gracefully when services fail
-- **Measurement**: System continues to function with reduced features
-- **Implementation**:
-  - Circuit breakers
-  - Fallback responses
-  - Feature flags
-- **Rationale**: Maintain user experience during failures
-
-### NFR-4: Reliability
-
-#### NFR-4.1: Data Consistency
-- **Requirement**: Data must be consistent across services
-- **Measurement**: Data consistency checks
-- **Implementation**:
-  - Saga pattern for distributed transactions
-  - Event sourcing for audit trail
-  - Eventual consistency model
-- **Rationale**: Prevent data corruption
-
-#### NFR-4.2: Error Recovery
-- **Requirement**: System must recover from transient failures
-- **Measurement**: Automatic recovery success rate > 95%
-- **Implementation**:
-  - Retry logic with exponential backoff
-  - Circuit breakers
-  - Dead letter queues for failed messages
-- **Rationale**: Improve system resilience
-
-#### NFR-4.3: Message Delivery
-- **Requirement**: Kafka messages must be delivered at least once
-- **Measurement**: Message delivery success rate = 100%
-- **Implementation**:
-  - Kafka replication factor = 2
-  - Consumer offset management
-  - Dead letter queue for failed messages
-- **Rationale**: Prevent message loss
-
 ### NFR-5: Security
 
 #### NFR-5.1: Authentication
 - **Requirement**: All API endpoints must require authentication (except public endpoints)
 - **Measurement**: Unauthorized requests rejected
 - **Implementation**:
-  - OAuth2/OIDC via Keycloak
   - JWT token validation
   - Token expiry enforcement
 - **Rationale**: Prevent unauthorized access
@@ -557,7 +582,6 @@
 - **Implementation**:
   - Role-based access control (RBAC)
   - Resource ownership verification
-  - Audit logging
 - **Rationale**: Prevent data leakage
 
 #### NFR-5.3: Data Encryption
@@ -566,7 +590,6 @@
 - **Implementation**:
   - TLS 1.3 for data in transit
   - AES-256 for data at rest
-  - Encrypted database fields for PII
 - **Rationale**: Protect sensitive data
 
 #### NFR-5.4: PCI Compliance
@@ -577,16 +600,6 @@
   - Tokenization of payment methods
   - Secure payment gateway integration
 - **Rationale**: Legal requirement
-
-#### NFR-5.5: Rate Limiting
-- **Requirement**: API endpoints must be rate limited
-- **Measurement**: Requests per second per user
-- **Implementation**:
-  - 100 requests/second per user
-  - 1000 requests/second per IP
-  - Exponential backoff on limit exceeded
-- **Rationale**: Prevent abuse and DDoS
-
 ### NFR-6: Maintainability
 
 #### NFR-6.1: Code Quality
@@ -613,78 +626,35 @@
 - **Measurement**: Log coverage
 - **Implementation**:
   - Structured JSON logging
-  - Centralized log collection (ELK)
   - Log retention: 7 days
 - **Rationale**: Facilitate debugging
+### NFR-7: Deployability
 
-#### NFR-6.4: Monitoring
-- **Requirement**: System must be continuously monitored
-- **Measurement**: Monitoring coverage
-- **Implementation**:
-  - Prometheus metrics
-  - Grafana dashboards
-  - Alerting rules
-- **Rationale**: Detect issues early
-
-### NFR-7: Testability
-
-#### NFR-7.1: Unit Test Coverage
-- **Requirement**: Minimum 80% code coverage with unit tests
-- **Measurement**: Code coverage percentage
-- **Implementation**:
-  - JUnit 5 (Java), xUnit (.NET), Jest (Node)
-  - Mocking frameworks
-  - Test automation
-- **Rationale**: Catch bugs early
-
-#### NFR-7.2: Integration Test Coverage
-- **Requirement**: All service integrations must have integration tests
-- **Measurement**: Integration test count
-- **Implementation**:
-  - TestContainers for database testing
-  - Mock external services
-  - Test data management
-- **Rationale**: Verify service interactions
-
-#### NFR-7.3: Contract Testing
-- **Requirement**: Service-to-service contracts must be tested
-- **Measurement**: Contract test count
-- **Implementation**:
-  - Pact or Spring Cloud Contract
-  - Provider and consumer verification
-  - Contract versioning
-- **Rationale**: Prevent integration issues
-
-### NFR-8: Deployability
-
-#### NFR-8.1: Containerization
+#### NFR-7.1: Containerization
 - **Requirement**: All services must be containerized
 - **Measurement**: Docker image availability
 - **Implementation**:
   - Dockerfile per service
   - Docker Compose for local development
-  - Docker registry for image storage
 - **Rationale**: Consistent deployment
 
-#### NFR-8.2: Infrastructure as Code
+#### NFR-7.2: Infrastructure as Code
 - **Requirement**: Infrastructure must be defined as code
 - **Measurement**: IaC coverage
 - **Implementation**:
   - Docker Compose for local
   - Kubernetes manifests for production (optional)
-  - Terraform for cloud infrastructure (optional)
 - **Rationale**: Reproducible infrastructure
 
-#### NFR-8.3: Automated Deployment
+#### NFR-7.3: Automated Deployment
 - **Requirement**: Deployment must be automated
 - **Measurement**: Deployment automation coverage
 - **Implementation**:
   - GitHub Actions CI/CD
   - Automated testing before deployment
-  - Blue-green deployment strategy
 - **Rationale**: Reduce deployment errors
 
-#### NFR-8.4: Rollback Capability
+#### NFR-7.4: Rollback Capability
 - **Requirement**: System must support quick rollback
 - **Measurement**: Rollback time < 5 minutes
 - **Implementation**:
@@ -692,62 +662,433 @@
   - Docker image versioning
   - Database migration rollback
 - **Rationale**: Minimize impact of failed deployments
+### NFR-8: Architecture-Specific Requirements
 
-### NFR-9: Observability
+#### NFR-8.1: Hexagonal Architecture Requirements
 
-#### NFR-9.1: Distributed Tracing
-- **Requirement**: All requests must be traceable across services
-- **Measurement**: Trace coverage
+**NFR-8.1.1: Port Definition**
+- **Requirement**: All external interfaces must be defined as ports (interfaces)
+- **Measurement**: Port interface count
 - **Implementation**:
-  - Jaeger distributed tracing
-  - Trace ID propagation
-  - Sampling: 10% of requests
-- **Rationale**: Debug distributed issues
+  - UserRepository port for database access
+  - EmailSender port for notifications
+  - PaymentProcessor port for payment processing
+- **Rationale**: Enable multiple adapter implementations and testability
 
-#### NFR-9.2: Centralized Logging
-- **Requirement**: All logs must be centralized
-- **Measurement**: Log collection coverage
+**NFR-8.1.2: Adapter Implementation**
+- **Requirement**: All external systems must be implemented as adapters
+- **Measurement**: Adapter implementation count
 - **Implementation**:
-  - ELK Stack (Elasticsearch, Logstash, Kibana)
-  - Structured JSON logging
-  - Log retention: 7 days
-- **Rationale**: Facilitate debugging
+  - JPAUserRepository adapter implementing UserRepository port
+  - SMTPEmailSender adapter implementing EmailSender port
+  - StripePaymentAdapter adapter implementing PaymentProcessor port
+- **Rationale**: Separate infrastructure concerns from business logic
 
-#### NFR-9.3: Metrics Collection
-- **Requirement**: System metrics must be collected
-- **Measurement**: Metrics coverage
+**NFR-8.1.3: Core Independence**
+- **Requirement**: Core domain must have no dependencies on adapters
+- **Measurement**: Dependency analysis
 - **Implementation**:
-  - Prometheus metrics
-  - Grafana dashboards
-  - Alerting rules
-- **Rationale**: Monitor system health
+  - Core package imports only core classes
+  - No framework imports in core layer
+  - Business logic tests run without framework startup
+- **Rationale**: Testability and framework independence
 
-### NFR-10: Usability
+#### NFR-8.2: Vertical Layer Architecture Requirements
 
-#### NFR-10.1: API Documentation
-- **Requirement**: All APIs must be documented
-- **Measurement**: Documentation completeness
+**NFR-8.2.1: Layer Separation**
+- **Requirement**: Clear separation between Presentation, Business, and Data layers
+- **Measurement**: Layer dependency analysis
 - **Implementation**:
-  - OpenAPI/Swagger documentation
-  - Interactive API explorer
-  - Example requests/responses
-- **Rationale**: Facilitate API usage
+  - Presentation layer: Controllers, Views, DTOs
+  - Business layer: Services, Business Objects, Validators
+  - Data layer: Repositories, Entity Framework models, Database context
+- **Rationale**: Clear boundaries and separation of concerns
 
-#### NFR-10.2: Error Messages
-- **Requirement**: Error messages must be clear and actionable
-- **Measurement**: Error message quality
+**NFR-8.2.2: Downward Dependencies**
+- **Requirement**: Dependencies must flow downward (Presentation → Business → Data)
+- **Measurement**: Dependency direction analysis
 - **Implementation**:
-  - Descriptive error codes
-  - Helpful error messages
-  - Suggested actions
-- **Rationale**: Improve user experience
+  - Presentation layer references Business layer
+  - Business layer references Data layer
+  - No upward or cross-layer dependencies
+- **Rationale**: Maintain architectural discipline
 
-#### NFR-10.3: Response Format
-- **Requirement**: All responses must follow consistent format
-- **Measurement**: Format consistency
+**NFR-8.2.3: Layer-Specific Responsibilities**
+- **Requirement**: Each layer must have clearly defined responsibilities
+- **Measurement**: Code review and static analysis
 - **Implementation**:
-  - JSON response format
-  - Consistent field naming
-  - Pagination standards
-- **Rationale**: Simplify client development
+  - Presentation: Request/response handling, validation
+  - Business: Business logic, domain rules, use cases
+  - Data: Data access, persistence, ORM mapping
+- **Rationale**: Prevent layer confusion and maintainability issues
 
+#### NFR-8.3: Clean Architecture Requirements
+
+**NFR-8.3.1: Entities (Business Objects)**
+- **Requirement**: Business objects must be in the innermost layer
+- **Measurement**: Entity count and location
+- **Implementation**:
+  - User, Product, Order, Cart entities
+  - Business logic and invariants in entities
+  - No framework dependencies
+- **Rationale**: Core business logic isolation
+
+**NFR-8.3.2: Use Cases (Business Operations)**
+- **Requirement**: Business operations must be in the use case layer
+- **Measurement**: Use case count and location
+- **Implementation**:
+  - RegisterUser, Login, AddToCart, CreateOrder use cases
+  - Coordinate entities to accomplish business goals
+  - Depend on entities and interfaces (ports)
+- **Rationale**: Business logic orchestration
+
+**NFR-8.3.3: Framework Independence**
+- **Requirement**: Business logic must be independent of frameworks
+- **Measurement**: Framework import analysis
+- **Implementation**:
+  - No framework imports in entities or use cases
+  - Framework-specific code in adapters/presenters
+  - Business logic tests run without framework startup
+- **Rationale**: Testability and long-term maintainability
+## Architecture-Specific Requirements
+
+### AR-1: Hexagonal Architecture Implementation Requirements
+
+#### AR-1.1: Core Domain Layer
+- **Requirement**: Core domain must be framework-independent
+- **Components**:
+  - Entities (User, Product, Order, Cart, Address)
+  - Value objects (Email, Money, Quantity)
+  - Business logic and invariants
+- **Constraints**:
+  - No framework imports
+  - No database dependencies
+  - No external service dependencies
+- **Rationale**: Testability and business logic isolation
+
+#### AR-1.2: Ports (Interfaces)
+- **Requirement**: All external interfaces must be defined as ports
+- **Ports**:
+  - UserRepository (database access)
+  - EmailSender (notification service)
+  - PaymentProcessor (payment gateway)
+  - CartRepository (cart persistence)
+  - OrderRepository (order persistence)
+- **Constraints**:
+  - Ports defined in core layer
+  - No implementation in core layer
+  - Clear contract for each port
+- **Rationale**: Enable multiple adapter implementations
+
+#### AR-1.3: Adapters (Implementations)
+- **Requirement**: All external systems must be implemented as adapters
+- **Adapters**:
+  - JPAUserRepository (implements UserRepository)
+  - SMTPEmailSender (implements EmailSender)
+  - StripePaymentAdapter (implements PaymentProcessor)
+  - RedisCartRepository (implements CartRepository)
+  - PostgreSQLOrderRepository (implements OrderRepository)
+- **Constraints**:
+  - Adapters implement ports
+  - Adapters can depend on core (ports)
+  - No core dependencies on adapters
+- **Rationale**: Separate infrastructure concerns
+
+#### AR-1.4: Testability
+- **Requirement**: All business logic must be testable without framework
+- **Test Types**:
+  - Unit tests for entities and business logic
+  - Mock adapter tests for use cases
+  - Integration tests for adapters
+- **Constraints**:
+  - Business logic tests run without database
+  - Business logic tests run without framework startup
+  - Mock adapters for use case testing
+- **Rationale**: Fast feedback and architectural validation
+### AR-2: Vertical Layer Architecture Implementation Requirements
+
+#### AR-2.1: Presentation Layer
+- **Requirement**: Handle user interface concerns
+- **Components**:
+  - Controllers (API endpoints)
+  - ViewModels/DTOs (data transfer objects)
+  - Request validation
+  - Response formatting
+- **Constraints**:
+  - No business logic in controllers
+  - No direct database access
+  - Controllers depend on Business layer
+- **Rationale**: Separation of concerns
+
+#### AR-2.2: Business Layer
+- **Requirement**: Handle business logic and domain rules
+- **Components**:
+  - Services (use cases, business operations)
+  - Business objects (domain models)
+  - Validators (business rules)
+  - Mappers (object-to-object mapping)
+- **Constraints**:
+  - No framework dependencies
+  - No direct database access
+  - Business layer depends on Data layer for persistence
+- **Rationale**: Business logic isolation
+
+#### AR-2.3: Data Layer
+- **Requirement**: Handle data persistence
+- **Components**:
+  - Repositories (data access abstraction)
+  - Entity Framework models (database entities)
+  - Database context
+  - Migrations
+- **Constraints**:
+  - No business logic in repositories
+  - Repositories depend on Data layer models
+  - Data layer has no dependencies on other layers
+- **Rationale**: Data access abstraction
+
+#### AR-2.4: Dependency Flow
+- **Requirement**: Dependencies must flow downward
+- **Constraints**:
+  - Presentation → Business
+  - Business → Data
+  - No upward dependencies
+  - No cross-layer dependencies
+- **Rationale**: Maintain architectural discipline
+### AR-3: Clean Architecture Implementation Requirements
+
+#### AR-3.1: Entities Layer (Innermost)
+- **Requirement**: Business objects with core business logic
+- **Components**:
+  - User entity (business rules, invariants)
+  - Product entity (business rules, invariants)
+  - Order entity (business rules, invariants)
+  - Cart entity (business rules, invariants)
+- **Constraints**:
+  - No framework dependencies
+  - No database dependencies
+  - No external service dependencies
+  - Business logic and invariants in entities
+- **Rationale**: Core business logic isolation
+
+#### AR-3.2: Use Cases Layer (Middle)
+- **Requirement**: Business operations that coordinate entities
+- **Components**:
+  - RegisterUser use case
+  - Login use case
+  - AddToCart use case
+  - CreateOrder use case
+  - GetProductDetails use case
+- **Constraints**:
+  - Depend on entities
+  - Depend on interfaces (ports) for external services
+  - No framework dependencies
+  - No direct database access
+- **Rationale**: Business logic orchestration
+
+#### AR-3.3: Interfaces Layer (Boundary)
+- **Requirement**: Define interfaces for external services
+- **Components**:
+  - IUserRepository interface
+  - IEmailSender interface
+  - IPaymentProcessor interface
+  - ICartRepository interface
+- **Constraints**:
+  - Define contracts for external services
+  - No implementation
+  - Depend on entities
+- **Rationale**: Dependency inversion
+
+#### AR-3.4: Adapters Layer (Outermost)
+- **Requirement**: Implement interfaces and framework-specific code
+- **Components**:
+  - UserController (web framework adapter)
+  - JPAUserRepository (database adapter)
+  - SMTPEmailSender (notification adapter)
+  - StripePaymentAdapter (payment adapter)
+- **Constraints**:
+  - Implement interfaces from interfaces layer
+  - Can depend on all inner layers
+  - Framework-specific code only
+- **Rationale**: Framework isolation
+
+#### AR-3.5: Dependency Rule
+- **Requirement**: Dependencies must flow inward
+- **Constraints**:
+  - Adapters depend on interfaces
+  - Interfaces depend on entities
+  - Use cases depend on entities and interfaces
+  - No outer layer dependencies on inner layers
+- **Rationale**: Maintain architectural discipline
+## Testing Requirements
+
+### TR-1: Architecture Pattern Testing
+
+#### TR-1.1: Hexagonal Architecture Tests
+- **Requirement**: Tests must verify Hexagonal Architecture compliance
+- **Test Types**:
+  - Entity unit tests (business logic in isolation)
+  - Port mock tests (use cases with mocked adapters)
+  - Adapter integration tests (real database, email server)
+  - Architecture validation tests (dependency direction)
+- **Rationale**: Verify port/adapter separation and testability
+
+#### TR-1.2: Vertical Layer Architecture Tests
+- **Requirement**: Tests must verify Vertical Layer Architecture compliance
+- **Test Types**:
+  - Controller unit tests (request handling)
+  - Service unit tests (business logic)
+  - Repository integration tests (database access)
+  - Architecture validation tests (layer dependencies)
+- **Rationale**: Verify layer separation and dependency flow
+
+#### TR-1.3: Clean Architecture Tests
+- **Requirement**: Tests must verify Clean Architecture compliance
+- **Test Types**:
+  - Entity unit tests (business logic in isolation)
+  - Use case unit tests (business operations with mocked interfaces)
+  - Adapter integration tests (framework and database)
+  - Architecture validation tests (dependency direction)
+- **Rationale**: Verify layer separation and dependency rule
+### TR-2: Business Logic Testing
+
+#### TR-2.1: Entity Tests
+- **Requirement**: All business logic in entities must be tested
+- **Test Types**:
+  - Business rule validation
+  - Invariant preservation
+  - State transitions
+- **Constraints**:
+  - No framework dependencies
+  - No database dependencies
+  - Fast execution (< 100ms per test)
+- **Rationale**: Verify business logic correctness
+
+#### TR-2.2: Use Case Tests
+- **Requirement**: All business operations must be tested
+- **Test Types**:
+  - Happy path scenarios
+  - Error scenarios
+  - Edge cases
+- **Constraints**:
+  - Mock external services (adapters)
+  - No database dependencies
+  - No framework dependencies
+- **Rationale**: Verify business logic orchestration
+### TR-3: Adapter Testing
+
+#### TR-3.1: Database Adapter Tests
+- **Requirement**: All database adapters must have integration tests
+- **Test Types**:
+  - CRUD operations
+  - Query performance
+  - Transaction handling
+- **Constraints**:
+  - Use TestContainers or in-memory database
+  - Real database interactions
+- **Rationale**: Verify database integration
+
+#### TR-3.2: External Service Adapter Tests
+- **Requirement**: All external service adapters must have integration tests
+- **Test Types**:
+  - Email sending
+  - Payment processing
+  - External API calls
+- **Constraints**:
+  - Use test doubles (mock servers, stubs)
+  - Real external service interactions
+- **Rationale**: Verify external service integration
+### TR-4: Architecture Validation Tests
+
+#### TR-4.1: Dependency Direction Tests
+- **Requirement**: Tests must verify dependency direction
+- **Test Types**:
+  - Dependency analysis (no forbidden dependencies)
+  - Layer boundary tests (layer-specific imports)
+  - Architecture compliance tests
+- **Tools**: ArchUnit (Java), NetArchTest (.NET), pytest-arch (Python)
+- **Rationale**: Prevent architectural drift
+
+#### TR-4.2: Framework Independence Tests
+- **Requirement**: Tests must verify business logic is framework-independent
+- **Test Types**:
+  - Business logic tests without framework startup
+  - No framework imports in business logic
+  - Fast test execution
+- **Rationale**: Verify architectural discipline
+## Documentation Requirements
+
+### DR-1: Architecture Documentation
+
+#### DR-1.1: Architecture Overview
+- **Requirement**: Each implementation must include architecture overview
+- **Components**:
+  - Architecture diagram (C4 model)
+  - Layer/port descriptions
+  - Component responsibilities
+  - Dependency flow
+- **Rationale**: Help students understand architecture
+
+#### DR-1.2: Architecture Decision Records
+- **Requirement**: All architectural decisions must be documented
+- **Components**:
+  - ADR template
+  - Decision context
+  - Decision rationale
+  - Alternatives considered
+- **Rationale**: Document architectural reasoning
+
+#### DR-1.3: Architecture Comparison
+- **Requirement**: Document differences between architectures
+- **Components**:
+  - Hexagonal vs Vertical Layer vs Clean Architecture
+  - Trade-offs and benefits
+  - When to use each pattern
+- **Rationale**: Help students choose appropriate architecture
+### DR-2: Code Documentation
+
+#### DR-2.1: Class Documentation
+- **Requirement**: All classes must have documentation
+- **Components**:
+  - Class purpose and responsibilities
+  - Dependencies
+  - Usage examples
+- **Rationale**: Facilitate code understanding
+
+#### DR-2.2: Method Documentation
+- **Requirement**: All public methods must have documentation
+- **Components**:
+  - Method purpose
+  - Parameters
+  - Return values
+  - Exceptions
+- **Rationale**: Facilitate method usage
+
+#### DR-2.3: Architecture-Specific Documentation
+- **Requirement**: Document architecture-specific patterns
+- **Components**:
+  - Port/adapter patterns (Hexagonal)
+  - Layer responsibilities (Vertical Layer)
+  - Entities and use cases (Clean Architecture)
+- **Rationale**: Demonstrate architectural patterns
+### DR-3: README Documentation
+
+#### DR-3.1: Main README
+- **Requirement**: Each implementation must have a README
+- **Components**:
+  - Project overview
+  - Architecture pattern used
+  - Technology stack
+  - Quick start guide
+  - Running locally
+  - Testing instructions
+- **Rationale**: Help students get started
+
+#### DR-3.2: Architecture README
+- **Requirement**: Document architecture-specific details
+- **Components**:
+  - Architecture overview
+  - Layer/port structure
+  - Component responsibilities
+  - Dependency flow
+  - Architecture patterns used
+- **Rationale**: Help students understand architecture

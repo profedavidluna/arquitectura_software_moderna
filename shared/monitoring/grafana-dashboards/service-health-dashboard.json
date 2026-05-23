@@ -1,0 +1,443 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "service-health-dashboard",
+    "title": "Service Health Dashboard",
+    "description": "Service availability, SLA compliance, uptime tracking, and incident monitoring",
+    "tags": ["health", "availability", "sla", "uptime"],
+    "timezone": "browser",
+    "schemaVersion": 37,
+    "version": 2,
+    "refresh": "30s",
+    "editable": true,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Uptime (24h)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "avg_over_time(up{job=~\".*-service\"}[24h]) * 100",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "orange", "value": 95},
+                {"color": "yellow", "value": 99},
+                {"color": "green", "value": 99.5}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Service Availability (30 days)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "avg_over_time(up{job=~\".*-service\"}[30d]) * 100",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 3,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "orange", "value": 99},
+                {"color": "yellow", "value": 99.5},
+                {"color": "green", "value": 99.9}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Overall SLA Compliance",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "avg(avg_over_time(up{job=~\".*-service\"}[30d])) * 100",
+            "legendFormat": "Overall SLA",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 2,
+            "min": 90,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 90},
+                {"color": "orange", "value": 95},
+                {"color": "yellow", "value": 99},
+                {"color": "green", "value": 99.5}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 4,
+        "title": "Service Health Timeline",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 6},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "up{job=~\"$service\"}",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "custom": {"drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 30}
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Service Dependencies Health",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "up",
+            "legendFormat": "{{job}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {"align": "auto"},
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {"color": "red", "text": "DOWN"},
+                  "1": {"color": "green", "text": "UP"}
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "options": {
+          "showHeader": true,
+          "footer": {"show": false}
+        },
+        "transformations": [
+          {"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "instance": false}}}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Error Rate by Service",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\", job=~\"$service\"}[5m])) by (job) / sum(rate(http_requests_total{job=~\"$service\"}[5m])) by (job) * 100",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          },
+          {
+            "expr": "5",
+            "legendFormat": "Alert Threshold (5%)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 2},
+                {"color": "red", "value": 5}
+              ]
+            },
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Alert Threshold (5%)"},
+              "properties": [
+                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 7,
+        "title": "Service Response Time vs SLA",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 22},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=~\"$service\"}[5m])) by (le, job))",
+            "legendFormat": "{{job}} p95",
+            "refId": "A"
+          },
+          {
+            "expr": "2",
+            "legendFormat": "SLA Threshold (2s)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "SLA Threshold (2s)"},
+              "properties": [
+                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 8,
+        "title": "Active Alerts / Incidents",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 22},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\"}",
+            "legendFormat": "{{alertname}} on {{job}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {"align": "auto"}
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "severity"},
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {"type": "color-text"}
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {"type": "value", "options": {"critical": {"color": "red", "text": "CRITICAL"}, "warning": {"color": "yellow", "text": "WARNING"}}}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "showHeader": true,
+          "footer": {"show": false}
+        }
+      },
+      {
+        "id": 9,
+        "title": "Health Check Response Time",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(health_check_duration_seconds_bucket{job=~\"$service\"}[5m])) by (le, job))",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Service Restarts (last 1h)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "changes(process_start_time_seconds{job=~\"$service\"}[1h])",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 3}
+              ]
+            },
+            "custom": {"drawStyle": "bars", "fillOpacity": 50}
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Infrastructure Services Status",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 38},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "targets": [
+          {
+            "expr": "up{job=~\"kafka|redis|elasticsearch|keycloak|api-gateway|jaeger|grafana|prometheus\"}",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+            ]
+          }
+        },
+        "options": {
+          "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "background"
+        }
+      }
+    ],
+    "time": {"from": "now-7d", "to": "now"},
+    "timepicker": {
+      "refresh_intervals": ["30s", "1m", "5m", "15m", "30m", "1h"],
+      "time_options": ["1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "label": "Service",
+          "type": "query",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "query": "label_values(up{job=~\".*-service\"}, job)",
+          "refresh": 1,
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*-service"
+        },
+        {
+          "name": "slaPeriod",
+          "label": "SLA Period",
+          "type": "interval",
+          "query": "1h,6h,12h,24h,7d,30d",
+          "refresh": 2,
+          "current": {"text": "7d", "value": "7d"}
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Service Health Alerts",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "enable": true,
+          "expr": "ALERTS{alertstate=\"firing\", category=~\"availability|performance|resource\"}",
+          "titleFormat": "{{alertname}}",
+          "textFormat": "{{description}}",
+          "tagKeys": "severity"
+        }
+      ]
+    },
+    "links": [
+      {"title": "System Dashboard", "url": "/d/system-dashboard", "type": "dashboard"},
+      {"title": "Application Dashboard", "url": "/d/application-dashboard", "type": "dashboard"},
+      {"title": "Business Dashboard", "url": "/d/business-dashboard", "type": "dashboard"}
+    ]
+  }
+}

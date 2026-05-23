@@ -1,133 +1,170 @@
-# Keycloak Configuration
+# Keycloak Configuration Guide
 
-This directory contains Keycloak configuration files for the ecommerce platform.
+## Overview
 
-## Setup Instructions
+Keycloak is configured as the centralized authentication and authorization server for the ecommerce platform. It handles OAuth2/OIDC authentication, user management, and role-based access control (RBAC).
 
-### 1. Access Keycloak Admin Console
+## Configuration Details
 
-1. Navigate to http://localhost:8180
-2. Click "Administration Console"
-3. Login with credentials:
-   - Username: `admin`
-   - Password: `admin`
+### Realm
+- **Name**: ecommerce
+- **Status**: Enabled
 
-### 2. Create Realm
+### User Roles
 
-1. Click on "Master" dropdown in top-left
-2. Click "Create Realm"
-3. Enter realm name: `ecommerce`
-4. Click "Create"
+| Role | Description | Permissions |
+|------|-------------|-------------|
+| ADMIN | Administrator with full access | All endpoints, all operations |
+| USER | Regular user | User profile management, browsing |
+| CUSTOMER | Customer role for shopping | Cart, checkout, order history |
+| SUPPORT | Support agent | Order management, customer support |
 
-### 3. Create Roles
+### OAuth2/OIDC Clients
 
-1. Go to "Realm Roles"
-2. Create the following roles:
-   - `ADMIN`: Full system access
-   - `USER`: Regular user access
-   - `CUSTOMER`: Customer-specific access
-   - `SUPPORT`: Support staff access
+#### web-client (Public)
+- **Type**: Public client
+- **Redirect URIs**: http://localhost:3000/*, http://localhost:8080/*
+- **Web Origins**: http://localhost:3000, http://localhost:8080
+- **Use Case**: Web frontend applications
 
-### 4. Create Clients
+#### mobile-client (Public)
+- **Type**: Public client
+- **Redirect URIs**: http://localhost:8100/*, http://localhost:4200/*
+- **Web Origins**: http://localhost:8100, http://localhost:4200
+- **Use Case**: Mobile applications
 
-#### Web Client (Frontend SPA)
-1. Go to "Clients"
-2. Click "Create client"
-3. Client ID: `web-client`
-4. Client Protocol: `openid-connect`
-5. Configure:
-   - Access Type: `public`
-   - Valid Redirect URIs: `http://localhost:3000/*`
-   - Web Origins: `http://localhost:3000`
+#### service-account (Confidential)
+- **Type**: Confidential client
+- **Secret**: Generated automatically
+- **Service Accounts**: Enabled
+- **Use Case**: Service-to-service communication
 
-#### Mobile Client
-1. Create new client
-2. Client ID: `mobile-client`
-3. Client Protocol: `openid-connect`
-4. Configure:
-   - Access Type: `public`
-   - Valid Redirect URIs: `com.ecommerce.mobile://*`
+### Token Configuration
 
-#### Service Account (Inter-service Communication)
-1. Create new client
-2. Client ID: `service-account`
-3. Client Protocol: `openid-connect`
-4. Configure:
-   - Access Type: `confidential`
-   - Service Accounts Enabled: `ON`
-   - Generate client secret
+| Token Type | Expiry | Description |
+|------------|--------|-------------|
+| Access Token | 15 minutes | Used for API authentication |
+| Refresh Token | 7 days | Used to obtain new access tokens |
 
-### 5. Create Test Users
+## Test Users
 
-1. Go to "Users"
-2. Create users with the following roles:
-
-**Admin User**
-- Username: `admin@ecommerce.com`
-- Email: `admin@ecommerce.com`
-- Password: `admin123`
-- Roles: `ADMIN`
-
-**Customer User**
-- Username: `customer@ecommerce.com`
-- Email: `customer@ecommerce.com`
-- Password: `customer123`
-- Roles: `CUSTOMER`
-
-**Support User**
-- Username: `support@ecommerce.com`
-- Email: `support@ecommerce.com`
-- Password: `support123`
-- Roles: `SUPPORT`
-
-### 6. Configure Token Settings
-
-1. Go to "Realm Settings"
-2. Click "Tokens" tab
-3. Configure:
-   - Access Token Lifespan: `15 minutes`
-   - Refresh Token Lifespan: `7 days`
-   - Refresh Token Max Reuse: `0` (unlimited)
+| Username | Password | Roles | Email |
+|----------|----------|-------|-------|
+| admin | admin | ADMIN, USER, CUSTOMER | admin@ecommerce.local |
+| user | user | USER, CUSTOMER | user@ecommerce.local |
+| customer | customer | CUSTOMER | customer@ecommerce.local |
+| support | support | SUPPORT, USER | support@ecommerce.local |
 
 ## API Integration
 
-### Getting Access Token
+### Get Access Token (Password Grant)
 
 ```bash
 curl -X POST http://localhost:8180/realms/ecommerce/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=web-client" \
-  -d "grant_type=password" \
-  -d "username=customer@ecommerce.com" \
-  -d "password=customer123"
+  -d "username=admin" \
+  -d "password=admin" \
+  -d "grant_type=password"
 ```
 
-### Using Access Token
+### Use Access Token
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/users/me \
+curl http://localhost:8082/api/v1/users \
   -H "Authorization: Bearer <access_token>"
 ```
 
+### Refresh Token
+
+```bash
+curl -X POST http://localhost:8180/realms/ecommerce/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=web-client" \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=<refresh_token>"
+```
+
+## Setup Instructions
+
+### Using the Setup Script
+
+```bash
+# Make the script executable
+chmod +x shared/keycloak-config/keycloak-setup.sh
+
+# Run the setup script
+./shared/keycloak-config/keycloak-setup.sh
+```
+
+### Manual Setup
+
+1. **Access Keycloak**
+   ```
+   http://localhost:8180
+   Login: admin / admin
+   ```
+
+2. **Create Realm**
+   - Click "Create Realm"
+   - Name: ecommerce
+   - Click "Create"
+
+3. **Create Roles**
+   - Go to "Realm Roles"
+   - Click "Create Role"
+   - Create: ADMIN, USER, CUSTOMER, SUPPORT
+
+4. **Create Clients**
+   - Go to "Clients"
+   - Click "Create Client"
+   - Configure for web-client, mobile-client, service-account
+
+5. **Create Users**
+   - Go to "Users"
+   - Click "Create User"
+   - Create test users with appropriate roles
+
 ## Troubleshooting
 
-### Keycloak not starting
-- Check Docker logs: `docker logs keycloak`
-- Ensure user-db is running: `docker ps | grep user-db`
-- Wait for database to be ready (check healthcheck)
+### Keycloak Not Starting
+```bash
+# Check if Keycloak is running
+docker-compose ps keycloak
 
-### Cannot login
-- Verify user exists in Keycloak admin console
-- Check user password is correct
-- Ensure user has required roles
+# View logs
+docker-compose logs keycloak
 
-### Token validation fails
-- Verify token signature with Keycloak public key
-- Check token expiry time
-- Ensure client is configured correctly
+# Restart Keycloak
+docker-compose restart keycloak
+```
+
+### Cannot Connect to Keycloak
+- Verify Keycloak is running: `docker-compose ps`
+- Check port 8180 is not blocked
+- Verify network configuration in docker-compose.yml
+
+### Token Validation Fails
+- Check token expiry (15 minutes for access tokens)
+- Verify client configuration matches
+- Check token signature and issuer
+
+## Security Best Practices
+
+1. **Change Default Passwords**: Update admin password in production
+2. **Use HTTPS**: Configure SSL/TLS for production
+3. **Token Rotation**: Implement token refresh logic
+4. **Rate Limiting**: Configure rate limiting for token endpoints
+5. **Audit Logging**: Enable audit logging for security events
 
 ## References
 
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
-- [OAuth2/OIDC Specification](https://openid.net/connect/)
-- [JWT Tokens](https://jwt.io/)
+- [OAuth2 Specification](https://oauth.net/2/)
+- [OIDC Specification](https://openid.net/specs/openid-connect-core-1_0.html)
+
+---
+
+**Status**: ✅ Configured
+**Last Updated**: April 2024
+**Version**: 1.0.0

@@ -1,74 +1,406 @@
+# Prometheus Configuration for E-commerce Platform
+# Version: 2.0.0
+# Last Updated: June 2025
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  scrape_timeout: 10s
   external_labels:
     monitor: 'ecommerce-monitor'
+    environment: 'development'
 
+# Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: []
+        - targets:
+            - alertmanager:9093
+      timeout: 10s
 
+# Load alerting rules from files
 rule_files:
-  - 'alert_rules.yml'
+  - /etc/prometheus/alert_rules.yml
 
+# Scrape configurations
 scrape_configs:
+  # ============================================================
+  # SELF-MONITORING
+  # ============================================================
+
+  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+    metrics_path: /metrics
+    scrape_interval: 15s
 
-  # Microservices metrics
+  # ============================================================
+  # MICROSERVICES (Spring Boot Actuator - /actuator/prometheus)
+  # ============================================================
+
+  # User Service - Port 8081
   - job_name: 'user-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
-      - targets: ['user-service:8082']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['user-service:8081']
+        labels:
+          service: 'user-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'identity'
 
+  # Product Service - Port 8082
   - job_name: 'product-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
-      - targets: ['product-service:8083']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['product-service:8082']
+        labels:
+          service: 'product-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'catalog'
 
+  # Cart Service - Port 8083
   - job_name: 'cart-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
-      - targets: ['cart-service:8084']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['cart-service:8083']
+        labels:
+          service: 'cart-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'shopping'
 
+  # Payment Service - Port 8084
+  - job_name: 'payment-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ['payment-service:8084']
+        labels:
+          service: 'payment-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'finance'
+
+  # Order Service - Port 8085
   - job_name: 'order-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
       - targets: ['order-service:8085']
-    metrics_path: '/actuator/prometheus'
+        labels:
+          service: 'order-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'fulfillment'
 
-  - job_name: 'payment-service'
-    static_configs:
-      - targets: ['payment-service:8086']
-    metrics_path: '/actuator/prometheus'
-
+  # Inventory Service - Port 8086
   - job_name: 'inventory-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
-      - targets: ['inventory-service:8087']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['inventory-service:8086']
+        labels:
+          service: 'inventory-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'warehouse'
 
+  # Notification Service - Port 8087
   - job_name: 'notification-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
-      - targets: ['notification-service:8088']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['notification-service:8087']
+        labels:
+          service: 'notification-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'communication'
 
+  # Analytics Service - Port 8088
   - job_name: 'analytics-service'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 5s
     static_configs:
-      - targets: ['analytics-service:8089']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['analytics-service:8088']
+        labels:
+          service: 'analytics-service'
+          team: 'backend'
+          environment: 'development'
+          domain: 'analytics'
 
-  # API Gateway
-  - job_name: 'api-gateway'
+  # ============================================================
+  # INFRASTRUCTURE - MESSAGING
+  # ============================================================
+
+  # Kafka Exporter for Kafka metrics
+  - job_name: 'kafka'
     static_configs:
-      - targets: ['api-gateway:8080']
-    metrics_path: '/actuator/prometheus'
+      - targets: ['kafka-exporter:9308']
+        labels:
+          service: 'kafka'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
 
-  # Infrastructure
+  # Zookeeper Exporter
+  - job_name: 'zookeeper'
+    static_configs:
+      - targets: ['zookeeper-exporter:9141']
+        labels:
+          service: 'zookeeper'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # ============================================================
+  # INFRASTRUCTURE - DATABASES
+  # ============================================================
+
+  # PostgreSQL Exporter - User DB
+  - job_name: 'postgres-user-db'
+    static_configs:
+      - targets: ['postgres-exporter-user:9187']
+        labels:
+          service: 'postgresql'
+          database: 'user-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL Exporter - Product DB
+  - job_name: 'postgres-product-db'
+    static_configs:
+      - targets: ['postgres-exporter-product:9187']
+        labels:
+          service: 'postgresql'
+          database: 'product-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL Exporter - Order DB
+  - job_name: 'postgres-order-db'
+    static_configs:
+      - targets: ['postgres-exporter-order:9187']
+        labels:
+          service: 'postgresql'
+          database: 'order-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL Exporter - Payment DB
+  - job_name: 'postgres-payment-db'
+    static_configs:
+      - targets: ['postgres-exporter-payment:9187']
+        labels:
+          service: 'postgresql'
+          database: 'payment-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL Exporter - Inventory DB
+  - job_name: 'postgres-inventory-db'
+    static_configs:
+      - targets: ['postgres-exporter-inventory:9187']
+        labels:
+          service: 'postgresql'
+          database: 'inventory-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL Exporter - Cart DB
+  - job_name: 'postgres-cart-db'
+    static_configs:
+      - targets: ['postgres-exporter-cart:9187']
+        labels:
+          service: 'postgresql'
+          database: 'cart-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # PostgreSQL Exporter - Analytics DB
+  - job_name: 'postgres-analytics-db'
+    static_configs:
+      - targets: ['postgres-exporter-analytics:9187']
+        labels:
+          service: 'postgresql'
+          database: 'analytics-db'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # ============================================================
+  # INFRASTRUCTURE - CACHING
+  # ============================================================
+
+  # Redis Exporter
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
 
-  - job_name: 'postgres'
+  # ============================================================
+  # INFRASTRUCTURE - SECURITY
+  # ============================================================
+
+  # Keycloak Metrics
+  - job_name: 'keycloak'
+    metrics_path: /realms/ecommerce/metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
     static_configs:
-      - targets: ['postgres-exporter:9187']
+      - targets: ['keycloak:8080']
+        labels:
+          service: 'keycloak'
+          team: 'security'
+          environment: 'development'
+
+  # ============================================================
+  # INFRASTRUCTURE - API GATEWAY
+  # ============================================================
+
+  # API Gateway (Kong) Metrics
+  - job_name: 'api-gateway'
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ['api-gateway:8001']
+        labels:
+          service: 'api-gateway'
+          team: 'platform'
+          environment: 'development'
+
+  # ============================================================
+  # INFRASTRUCTURE - OBSERVABILITY STACK
+  # ============================================================
+
+  # Elasticsearch Metrics
+  - job_name: 'elasticsearch'
+    metrics_path: /_prometheus/metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['elasticsearch:9200']
+        labels:
+          service: 'elasticsearch'
+          team: 'platform'
+          environment: 'development'
+
+  # Logstash Metrics
+  - job_name: 'logstash'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['logstash:9600']
+        labels:
+          service: 'logstash'
+          team: 'platform'
+          environment: 'development'
+
+  # Kibana Metrics
+  - job_name: 'kibana'
+    metrics_path: /api/status
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['kibana:5601']
+        labels:
+          service: 'kibana'
+          team: 'platform'
+          environment: 'development'
+
+  # Jaeger Metrics
+  - job_name: 'jaeger'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['jaeger:14269']
+        labels:
+          service: 'jaeger'
+          team: 'platform'
+          environment: 'development'
+
+  # Grafana Metrics
+  - job_name: 'grafana'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+          team: 'platform'
+          environment: 'development'
+
+  # ============================================================
+  # INFRASTRUCTURE - SYSTEM
+  # ============================================================
+
+  # Node Exporter for host system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # cAdvisor for container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+          team: 'platform'
+          environment: 'development'
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s

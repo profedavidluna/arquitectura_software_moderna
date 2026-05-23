@@ -1,0 +1,150 @@
+# =============================================================================
+# SOA Architecture - Docker Compose
+# =============================================================================
+# This file orchestrates all infrastructure and services for the SOA system.
+# 
+# SOA Key Concepts:
+# - Each service is independent and has its own database (Database per Service)
+# - Services communicate via an Enterprise Service Bus (Kafka)
+# - Loose coupling: services don't know about each other's internals
+# - High cohesion: each service handles one business domain
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # INFRASTRUCTURE LAYER
+  # ===========================================================================
+
+  # Zookeeper - Required by Kafka for cluster coordination
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: soa-zookeeper
+    ports:
+      - "2182:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - soa-network
+
+  # Apache Kafka - Enterprise Service Bus (ESB)
+  # In SOA, the ESB is the backbone for inter-service communication
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: soa-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29093,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - soa-network
+
+  # PostgreSQL - Shared database server with multiple databases
+  # Each service gets its own database (logical separation)
+  postgres:
+    image: postgres:15-alpine
+    container_name: soa-postgres
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: product_db,order_db,inventory_db
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - soa-postgres-data:/var/lib/postgresql/data
+    networks:
+      - soa-network
+
+  # ===========================================================================
+  # SERVICE LAYER - Business Services
+  # ===========================================================================
+
+  # Product Service - Manages the product catalog
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: soa-product-service
+    ports:
+      - "4091:4091"
+    environment:
+      PORT: 4091
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: product_db
+      KAFKA_BROKERS: kafka:29093
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - soa-network
+    restart: on-failure
+
+  # Order Service - Manages orders and orchestrates the Saga pattern
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: soa-order-service
+    ports:
+      - "4092:4092"
+    environment:
+      PORT: 4092
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: order_db
+      KAFKA_BROKERS: kafka:29093
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - soa-network
+    restart: on-failure
+
+  # Inventory Service - Manages stock levels and reservations
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: soa-inventory-service
+    ports:
+      - "4093:4093"
+    environment:
+      PORT: 4093
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: inventory_db
+      KAFKA_BROKERS: kafka:29093
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - soa-network
+    restart: on-failure
+
+# ===========================================================================
+# NETWORK & VOLUMES
+# ===========================================================================
+networks:
+  soa-network:
+    driver: bridge
+
+volumes:
+  soa-postgres-data:

@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: dotnet-mvc-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dotnet-mvc-network
+
+  hexagonal-app:
+    build:
+      context: ./HexagonalArchitecture
+      dockerfile: Dockerfile
+    container_name: dotnet-hexagonal-app
+    ports:
+      - "5081:5081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:5081
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dotnet_hexagonal_db;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dotnet-mvc-network
+
+  layered-app:
+    build:
+      context: ./LayeredArchitecture
+      dockerfile: Dockerfile
+    container_name: dotnet-layered-app
+    ports:
+      - "5082:5082"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:5082
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dotnet_layered_db;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dotnet-mvc-network
+
+  clean-app:
+    build:
+      context: ./CleanArchitecture
+      dockerfile: Dockerfile
+    container_name: dotnet-clean-app
+    ports:
+      - "5083:5083"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:5083
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dotnet_clean_db;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dotnet-mvc-network
+
+volumes:
+  postgres_data:
+
+networks:
+  dotnet-mvc-network:
+    driver: bridge

@@ -1,0 +1,218 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: cart-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5436/cart_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+    open-in-view: false
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: cart-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+  # Security - OAuth2 Resource Server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ecommerce}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/ecommerce/protocol/openid-connect/certs}
+
+# Cart Configuration
+cart:
+  tax-rate: 0.08
+  free-shipping-threshold: 50.00
+  default-shipping-amount: 5.99
+  expiration-days: 30
+
+# Service URLs
+services:
+  product-service:
+    url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      productService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+  retry:
+    instances:
+      productService:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,caches,circuitbreakers
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 0.1
+
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Logging
+logging:
+  level:
+    com.ecommerce.cartservice: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    io.github.resilience4j: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  datasource:
+    url: jdbc:postgresql://localhost:5436/cart_db
+
+logging:
+  level:
+    com.ecommerce.cartservice: DEBUG
+    org.hibernate.SQL: DEBUG
+
+---
+# Test Profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/ecommerce
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+logging:
+  level:
+    com.ecommerce.cartservice: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+management:
+  tracing:
+    sampling:
+      probability: 0.05
+
+logging:
+  level:
+    com.ecommerce.cartservice: WARN
+    org.springframework.web: WARN

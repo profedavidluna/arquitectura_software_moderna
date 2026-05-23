@@ -1,0 +1,161 @@
+# =============================================================================
+# SOA Architecture - Docker Compose
+# =============================================================================
+# This file orchestrates all infrastructure and services for the SOA system.
+# Services communicate asynchronously via Apache Kafka (Enterprise Service Bus).
+# Each service has its own PostgreSQL database (Database per Service pattern).
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Zookeeper (required by Kafka)
+  # ---------------------------------------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: soa-zookeeper
+    ports:
+      - "2183:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - soa-network
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Apache Kafka (Enterprise Service Bus)
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: soa-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - soa-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29094"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: PostgreSQL (shared instance, separate databases)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: soa-postgres
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: product_db,order_db,inventory_db
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - soa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Service: Product Service (port 9091)
+  # ---------------------------------------------------------------------------
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: soa-product-service
+    ports:
+      - "9091:9091"
+    environment:
+      PORT: 9091
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: product_db
+      KAFKA_BROKERS: kafka:29094
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - soa-network
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Service: Order Service (port 9092)
+  # ---------------------------------------------------------------------------
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: soa-order-service
+    ports:
+      - "9092:9092"
+    environment:
+      PORT: 9092
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: order_db
+      KAFKA_BROKERS: kafka:29094
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - soa-network
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Service: Inventory Service (port 9093)
+  # ---------------------------------------------------------------------------
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: soa-inventory-service
+    ports:
+      - "9093:9093"
+    environment:
+      PORT: 9093
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: inventory_db
+      KAFKA_BROKERS: kafka:29094
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - soa-network
+    restart: on-failure
+
+networks:
+  soa-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

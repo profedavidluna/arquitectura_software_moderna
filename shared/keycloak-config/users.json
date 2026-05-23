@@ -1,0 +1,64 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@ecommerce.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "USER", "CUSTOMER"]
+    },
+    {
+      "username": "user",
+      "enabled": true,
+      "email": "user@ecommerce.local",
+      "firstName": "Regular",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER", "CUSTOMER"]
+    },
+    {
+      "username": "customer",
+      "enabled": true,
+      "email": "customer@ecommerce.local",
+      "firstName": "Customer",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "customer",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["CUSTOMER"]
+    },
+    {
+      "username": "support",
+      "enabled": true,
+      "email": "support@ecommerce.local",
+      "firstName": "Support",
+      "lastName": "Agent",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "support",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SUPPORT", "USER"]
+    }
+  ]
+}
