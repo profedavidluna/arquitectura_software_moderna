@@ -78,3 +78,43 @@ CREATE TABLE inventory (
 
 -- Index for product lookups
 CREATE INDEX idx_inventory_product_id ON inventory(product_id);
+
+-- =============================================================================
+-- Seed Data
+-- =============================================================================
+\c product_db;
+
+INSERT INTO products (id, name, description, price, category, sku, active) VALUES
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'Laptop Pro 15', 'High-performance laptop with 16GB RAM and SSD', 1299.99, 'Electronics', 'ELEC-LP15-001', true),
+  ('aaaaaaaa-0000-0000-0000-000000000002', 'Wireless Mouse', 'Ergonomic wireless mouse with long battery life', 29.99, 'Accessories', 'ACC-WM-001', true),
+  ('aaaaaaaa-0000-0000-0000-000000000003', 'USB-C Hub 7-in-1', 'Multi-port hub with HDMI, USB and card reader', 49.99, 'Accessories', 'ACC-HUB-001', true),
+  ('aaaaaaaa-0000-0000-0000-000000000004', 'Mechanical Keyboard', 'Compact RGB mechanical keyboard with blue switches', 89.99, 'Electronics', 'ELEC-KB-001', true),
+  ('aaaaaaaa-0000-0000-0000-000000000005', 'Monitor 27" 4K', 'Ultra HD 4K IPS monitor with HDR support', 499.99, 'Electronics', 'ELEC-MON-001', true);
+
+\c order_db;
+
+INSERT INTO orders (id, user_id, status, total_amount) VALUES
+  ('bbbbbbbb-0000-0000-0000-000000000001', 'ffffffff-0000-0000-0000-000000000001', 'CONFIRMED', 1329.98),
+  ('bbbbbbbb-0000-0000-0000-000000000002', 'ffffffff-0000-0000-0000-000000000002', 'CONFIRMED', 139.98),
+  ('bbbbbbbb-0000-0000-0000-000000000003', 'ffffffff-0000-0000-0000-000000000001', 'PENDING', 499.99),
+  ('bbbbbbbb-0000-0000-0000-000000000004', 'ffffffff-0000-0000-0000-000000000002', 'CONFIRMED', 119.98),
+  ('bbbbbbbb-0000-0000-0000-000000000005', 'ffffffff-0000-0000-0000-000000000001', 'CANCELLED', 1299.99);
+
+INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price, subtotal) VALUES
+  ('cccccccc-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Laptop Pro 15', 1, 1299.99, 1299.99),
+  ('cccccccc-0000-0000-0000-000000000002', 'bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000002', 'Wireless Mouse', 1, 29.99, 29.99),
+  ('cccccccc-0000-0000-0000-000000000003', 'bbbbbbbb-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000003', 'USB-C Hub 7-in-1', 1, 49.99, 49.99),
+  ('cccccccc-0000-0000-0000-000000000004', 'bbbbbbbb-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000004', 'Mechanical Keyboard', 1, 89.99, 89.99),
+  ('cccccccc-0000-0000-0000-000000000005', 'bbbbbbbb-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000005', 'Monitor 27" 4K', 1, 499.99, 499.99),
+  ('cccccccc-0000-0000-0000-000000000006', 'bbbbbbbb-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000002', 'Wireless Mouse', 1, 29.99, 29.99),
+  ('cccccccc-0000-0000-0000-000000000007', 'bbbbbbbb-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000004', 'Mechanical Keyboard', 1, 89.99, 89.99),
+  ('cccccccc-0000-0000-0000-000000000008', 'bbbbbbbb-0000-0000-0000-000000000005', 'aaaaaaaa-0000-0000-0000-000000000001', 'Laptop Pro 15', 1, 1299.99, 1299.99);
+
+\c inventory_db;
+
+INSERT INTO inventory (id, product_id, product_name, quantity_available, quantity_reserved) VALUES
+  ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Laptop Pro 15', 50, 0),
+  ('dddddddd-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000002', 'Wireless Mouse', 200, 0),
+  ('dddddddd-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000003', 'USB-C Hub 7-in-1', 150, 0),
+  ('dddddddd-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000004', 'Mechanical Keyboard', 75, 0),
+  ('dddddddd-0000-0000-0000-000000000005', 'aaaaaaaa-0000-0000-0000-000000000005', 'Monitor 27" 4K', 30, 0);

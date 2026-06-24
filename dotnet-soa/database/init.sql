@@ -65,3 +65,43 @@ CREATE TABLE IF NOT EXISTS inventory (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =====================================================
+-- Seed Data
+-- =====================================================
+\c dotnet_product_db;
+
+INSERT INTO products (id, name, description, price, category) VALUES
+  ('cccccccc-0000-0000-0000-000000000001', 'Laptop Pro 15', 'High-performance laptop with 16GB RAM and SSD', 1299.99, 'Electronics'),
+  ('cccccccc-0000-0000-0000-000000000002', 'Wireless Mouse', 'Ergonomic wireless mouse with long battery life', 29.99, 'Accessories'),
+  ('cccccccc-0000-0000-0000-000000000003', 'USB-C Hub 7-in-1', 'Multi-port hub with HDMI, USB and card reader', 49.99, 'Accessories'),
+  ('cccccccc-0000-0000-0000-000000000004', 'Mechanical Keyboard', 'Compact RGB mechanical keyboard with blue switches', 89.99, 'Electronics'),
+  ('cccccccc-0000-0000-0000-000000000005', 'Monitor 27" 4K', 'Ultra HD 4K IPS monitor with HDR support', 499.99, 'Electronics');
+
+\c dotnet_order_db;
+
+INSERT INTO orders (id, customer_name, customer_email, status, total_amount) VALUES
+  ('dddddddd-0000-0000-0000-000000000001', 'Alice Johnson', 'alice@example.com', 'CONFIRMED', 1329.98),
+  ('dddddddd-0000-0000-0000-000000000002', 'Bob Smith', 'bob@example.com', 'CONFIRMED', 139.98),
+  ('dddddddd-0000-0000-0000-000000000003', 'Carol Davis', 'carol@example.com', 'PENDING', 499.99),
+  ('dddddddd-0000-0000-0000-000000000004', 'David Lee', 'david@example.com', 'CONFIRMED', 119.98),
+  ('dddddddd-0000-0000-0000-000000000005', 'Eva Martinez', 'eva@example.com', 'CANCELLED', 1299.99);
+
+INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price) VALUES
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001', 'Laptop Pro 15', 1, 1299.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000002', 'Wireless Mouse', 1, 29.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000003', 'USB-C Hub 7-in-1', 1, 49.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000004', 'Mechanical Keyboard', 1, 89.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000003', 'cccccccc-0000-0000-0000-000000000005', 'Monitor 27" 4K', 1, 499.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000004', 'cccccccc-0000-0000-0000-000000000002', 'Wireless Mouse', 1, 29.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000004', 'cccccccc-0000-0000-0000-000000000004', 'Mechanical Keyboard', 1, 89.99),
+  (gen_random_uuid(), 'dddddddd-0000-0000-0000-000000000005', 'cccccccc-0000-0000-0000-000000000001', 'Laptop Pro 15', 1, 1299.99);
+
+\c dotnet_inventory_db;
+
+INSERT INTO inventory (id, product_id, product_name, quantity, reserved_quantity) VALUES
+  (gen_random_uuid(), 'cccccccc-0000-0000-0000-000000000001', 'Laptop Pro 15', 50, 0),
+  (gen_random_uuid(), 'cccccccc-0000-0000-0000-000000000002', 'Wireless Mouse', 200, 0),
+  (gen_random_uuid(), 'cccccccc-0000-0000-0000-000000000003', 'USB-C Hub 7-in-1', 150, 0),
+  (gen_random_uuid(), 'cccccccc-0000-0000-0000-000000000004', 'Mechanical Keyboard', 75, 0),
+  (gen_random_uuid(), 'cccccccc-0000-0000-0000-000000000005', 'Monitor 27" 4K', 30, 0);

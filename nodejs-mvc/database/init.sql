@@ -73,3 +73,33 @@ CREATE TABLE products (
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_active ON products(active);
+
+-- ============================================================
+-- Seed Data
+-- ============================================================
+\c hexagonal_db;
+
+INSERT INTO products (id, name, description, price, category, stock_quantity, sku, active) VALUES
+  ('44444444-4444-4444-4444-000000000001', 'Laptop Pro 15', 'High-performance laptop with 16GB RAM and SSD', 1299.99, 'Electronics', 50, 'ELEC-LP15-001', true),
+  ('44444444-4444-4444-4444-000000000002', 'Wireless Mouse', 'Ergonomic wireless mouse with long battery life', 29.99, 'Accessories', 200, 'ACC-WM-001', true),
+  ('44444444-4444-4444-4444-000000000003', 'USB-C Hub 7-in-1', 'Multi-port hub with HDMI, USB and card reader', 49.99, 'Accessories', 150, 'ACC-HUB-001', true),
+  ('44444444-4444-4444-4444-000000000004', 'Mechanical Keyboard', 'Compact RGB mechanical keyboard with blue switches', 89.99, 'Electronics', 75, 'ELEC-KB-001', true),
+  ('44444444-4444-4444-4444-000000000005', 'Monitor 27" 4K', 'Ultra HD 4K IPS monitor with HDR support', 499.99, 'Electronics', 30, 'ELEC-MON-001', true);
+
+\c layered_db;
+
+INSERT INTO products (id, name, description, price, category, stock_quantity, sku, active) VALUES
+  ('55555555-5555-5555-5555-000000000001', 'Laptop Pro 15', 'High-performance laptop with 16GB RAM and SSD', 1299.99, 'Electronics', 50, 'ELEC-LP15-001', true),
+  ('55555555-5555-5555-5555-000000000002', 'Wireless Mouse', 'Ergonomic wireless mouse with long battery life', 29.99, 'Accessories', 200, 'ACC-WM-001', true),
+  ('55555555-5555-5555-5555-000000000003', 'USB-C Hub 7-in-1', 'Multi-port hub with HDMI, USB and card reader', 49.99, 'Accessories', 150, 'ACC-HUB-001', true),
+  ('55555555-5555-5555-5555-000000000004', 'Mechanical Keyboard', 'Compact RGB mechanical keyboard with blue switches', 89.99, 'Electronics', 75, 'ELEC-KB-001', true),
+  ('55555555-5555-5555-5555-000000000005', 'Monitor 27" 4K', 'Ultra HD 4K IPS monitor with HDR support', 499.99, 'Electronics', 30, 'ELEC-MON-001', true);
+
+\c clean_db;
+
+INSERT INTO products (id, name, description, price, category, stock_quantity, sku, active) VALUES
+  ('66666666-6666-6666-6666-000000000001', 'Laptop Pro 15', 'High-performance laptop with 16GB RAM and SSD', 1299.99, 'Electronics', 50, 'ELEC-LP15-001', true),
+  ('66666666-6666-6666-6666-000000000002', 'Wireless Mouse', 'Ergonomic wireless mouse with long battery life', 29.99, 'Accessories', 200, 'ACC-WM-001', true),
+  ('66666666-6666-6666-6666-000000000003', 'USB-C Hub 7-in-1', 'Multi-port hub with HDMI, USB and card reader', 49.99, 'Accessories', 150, 'ACC-HUB-001', true),
+  ('66666666-6666-6666-6666-000000000004', 'Mechanical Keyboard', 'Compact RGB mechanical keyboard with blue switches', 89.99, 'Electronics', 75, 'ELEC-KB-001', true),
+  ('66666666-6666-6666-6666-000000000005', 'Monitor 27" 4K', 'Ultra HD 4K IPS monitor with HDR support', 499.99, 'Electronics', 30, 'ELEC-MON-001', true);
