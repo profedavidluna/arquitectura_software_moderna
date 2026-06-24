@@ -44,7 +44,9 @@ CREATE INDEX idx_products_active ON products(active);
 INSERT INTO products (id, name, description, price, category, sku) VALUES
     ('550e8400-e29b-41d4-a716-446655440001', 'Laptop Pro 15', 'High-performance laptop with 16GB RAM', 1299.99, 'Electronics', 'ELEC-LP15-001'),
     ('550e8400-e29b-41d4-a716-446655440002', 'Wireless Mouse', 'Ergonomic wireless mouse with USB receiver', 29.99, 'Accessories', 'ACC-WM-001'),
-    ('550e8400-e29b-41d4-a716-446655440003', 'USB-C Hub', '7-in-1 USB-C hub with HDMI output', 49.99, 'Accessories', 'ACC-HUB-001');
+    ('550e8400-e29b-41d4-a716-446655440003', 'USB-C Hub', '7-in-1 USB-C hub with HDMI output', 49.99, 'Accessories', 'ACC-HUB-001'),
+    ('550e8400-e29b-41d4-a716-446655440004', 'Mechanical Keyboard', 'Compact RGB mechanical keyboard with blue switches', 89.99, 'Electronics', 'ELEC-KB-001'),
+    ('550e8400-e29b-41d4-a716-446655440005', 'Monitor 27" 4K', 'Ultra HD 4K IPS monitor with HDR support', 499.99, 'Electronics', 'ELEC-MON-001');
 
 -- =============================================================================
 -- Order Service Database Schema
@@ -112,4 +114,36 @@ CREATE INDEX idx_inventory_transactions_reference_id ON inventory_transactions(r
 INSERT INTO inventory (product_id, product_name, quantity_available, quantity_reserved) VALUES
     ('550e8400-e29b-41d4-a716-446655440001', 'Laptop Pro 15', 50, 0),
     ('550e8400-e29b-41d4-a716-446655440002', 'Wireless Mouse', 200, 0),
-    ('550e8400-e29b-41d4-a716-446655440003', 'USB-C Hub', 150, 0);
+    ('550e8400-e29b-41d4-a716-446655440003', 'USB-C Hub', 150, 0),
+    ('550e8400-e29b-41d4-a716-446655440004', 'Mechanical Keyboard', 75, 0),
+    ('550e8400-e29b-41d4-a716-446655440005', 'Monitor 27" 4K', 30, 0);
+
+-- Sample inventory transactions
+INSERT INTO inventory_transactions (product_id, transaction_type, quantity, reference_id) VALUES
+    ('550e8400-e29b-41d4-a716-446655440001', 'STOCK_IN', 50, null),
+    ('550e8400-e29b-41d4-a716-446655440002', 'STOCK_IN', 200, null),
+    ('550e8400-e29b-41d4-a716-446655440003', 'STOCK_IN', 150, null),
+    ('550e8400-e29b-41d4-a716-446655440004', 'STOCK_IN', 75, null),
+    ('550e8400-e29b-41d4-a716-446655440005', 'STOCK_IN', 30, null);
+
+-- =============================================================================
+-- Seed Orders and Order Items
+-- =============================================================================
+\c order_db;
+
+INSERT INTO orders (id, user_id, status, total_amount) VALUES
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000001', 'eeeeeeee-ffff-0000-1111-000000000001', 'CONFIRMED', 1329.98),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000002', 'eeeeeeee-ffff-0000-1111-000000000002', 'CONFIRMED', 139.98),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000003', 'eeeeeeee-ffff-0000-1111-000000000001', 'PENDING', 499.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000004', 'eeeeeeee-ffff-0000-1111-000000000002', 'CONFIRMED', 119.98),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000005', 'eeeeeeee-ffff-0000-1111-000000000001', 'CANCELLED', 1299.99);
+
+INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price, subtotal) VALUES
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000001', '550e8400-e29b-41d4-a716-446655440001', 'Laptop Pro 15', 1, 1299.99, 1299.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000001', '550e8400-e29b-41d4-a716-446655440002', 'Wireless Mouse', 1, 29.99, 29.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000002', '550e8400-e29b-41d4-a716-446655440003', 'USB-C Hub', 1, 49.99, 49.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000002', '550e8400-e29b-41d4-a716-446655440004', 'Mechanical Keyboard', 1, 89.99, 89.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000003', '550e8400-e29b-41d4-a716-446655440005', 'Monitor 27" 4K', 1, 499.99, 499.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000004', '550e8400-e29b-41d4-a716-446655440002', 'Wireless Mouse', 1, 29.99, 29.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000004', '550e8400-e29b-41d4-a716-446655440004', 'Mechanical Keyboard', 1, 89.99, 89.99),
+    ('aaaaaaaa-bbbb-cccc-dddd-000000000005', '550e8400-e29b-41d4-a716-446655440001', 'Laptop Pro 15', 1, 1299.99, 1299.99);
